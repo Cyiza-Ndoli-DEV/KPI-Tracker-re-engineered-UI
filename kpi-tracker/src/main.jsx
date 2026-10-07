@@ -17,6 +17,7 @@ import Drafts from './pages/Drafts'
 import MyKpis from './pages/MyKpis'
 import Rankings from './pages/Rankings'
 import Admin from './pages/Admin'
+import OrgFit from './pages/OrgFit'
 import { ShieldAlert } from 'lucide-react'
 import { isEmployeeRole } from './data/seed'
 import './styles.css'
@@ -53,6 +54,7 @@ function Router() {
   else if (a === 'rankings') page = <Rankings />
   else if (a === 'reports' && b === 'person' && route.parts[2]) page = <PersonReport key={route.parts[2]} id={route.parts[2]} />
   else if (a === 'reports') page = <Reports key={`${state.role}-${route.query.tab || ''}`} query={route.query} />
+  else if (a === 'org-fit') page = <OrgFit />
   else if (a === 'admin') page = <Admin />
   else page = <Empty title="Page not found" action={<Link to="/" className="btn primary">Go home</Link>} />
 

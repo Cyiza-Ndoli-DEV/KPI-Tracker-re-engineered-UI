@@ -5,7 +5,7 @@ import { Field, NumInput, Badge, Tabs, Empty, Avatar, Alert, useFeedback } from 
 import { valueLabel } from '../components/KpiWidgets'
 import { AuditTable } from './KpiDetail'
 import { LeaverModal } from '../components/ChangeModals'
-import { SetupPanel, OrgFitPanel } from './AdminSetup'
+import { SetupPanel } from './AdminSetup'
 import { byId, unitName } from '../lib/calc'
 import { fmtDate, fmtDateTime, timeAgo } from '../lib/utils'
 
@@ -28,14 +28,13 @@ export default function Admin() {
       <div className="page-head" style={{ marginBottom: 0 }}>
         <div>
           <h1>Admin settings</h1>
-          <div className="sub">Set up labels and percentages, Org Fit scores, edit requests, staff changes and the full audit trail.</div>
+          <div className="sub">Set up labels and percentages, edit requests, staff changes and the full audit trail.</div>
         </div>
       </div>
 
       <div className="card" style={{ padding: '0 12px' }}>
         <Tabs value={section} onChange={setSection} tabs={[
           { key: 'setup', label: 'Set up', icon: <Settings size={15} /> },
-          { key: 'orgfit', label: 'Org Fit scores', icon: <Users size={15} /> },
           { key: 'requests', label: 'Edit requests', icon: <Lock size={15} />, count: pending.length || undefined },
           { key: 'staff', label: 'Staff changes', icon: <UserMinus size={15} /> },
           { key: 'audit', label: 'Audit log', icon: <ScrollText size={15} /> },
@@ -44,7 +43,6 @@ export default function Admin() {
       </div>
 
       {section === 'setup' && <SetupPanel />}
-      {section === 'orgfit' && <OrgFitPanel />}
 
       {section === 'requests' && (<>
       <div className="grid g-2">

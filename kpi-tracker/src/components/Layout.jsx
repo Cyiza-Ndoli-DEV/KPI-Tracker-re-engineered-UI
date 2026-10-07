@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LayoutDashboard, CalendarRange, Target, Wand2, FileClock, UserCheck, Trophy, Settings, Gauge, BarChart3, CalendarDays, ArrowLeft, AlignLeft, CircleUserRound, Power, User } from 'lucide-react'
+import { LayoutDashboard, CalendarRange, Target, Wand2, FileClock, UserCheck, Trophy, Settings, Gauge, BarChart3, CalendarDays, ArrowLeft, AlignLeft, CircleUserRound, Power, User, HeartHandshake } from 'lucide-react'
 import { useStore, useCurrentUser } from '../store'
 import { ROLES } from '../data/seed'
 import { Link, navigate, useFeedback } from './ui'
@@ -17,12 +17,13 @@ export const NAV = [
   { to: '/reports', label: 'Reports', icon: BarChart3, roles: ['admin', 'dept_head', 'team_lead'] },
   // managers find rankings inside Reports; employees keep the stand-alone page
   { to: '/rankings', label: 'Rankings', icon: Trophy, roles: 'all', menuRoles: ['employee', 'employee2'] },
+  { to: '/org-fit', label: 'Org Fit Scores', icon: HeartHandshake, roles: ['admin'] },
   { to: '/admin', label: 'Admin Settings', icon: Settings, roles: ['admin'], count: 'requests' },
 ]
 
 export const allowed = (item, role) => !item.roles || item.roles === 'all' || item.roles.includes(role)
 
-const PAGE_LABEL = { '': 'Dashboard', cycles: 'Review Cycles', goals: 'Goals', kpis: 'KPIs', wizard: 'Goal Setup Wizard', drafts: 'Drafts', 'my-kpis': 'My KPIs', rankings: 'Rankings', reports: 'Reports', admin: 'Admin Settings' }
+const PAGE_LABEL = { '': 'Dashboard', cycles: 'Review Cycles', goals: 'Goals', kpis: 'KPIs', wizard: 'Goal Setup Wizard', drafts: 'Drafts', 'my-kpis': 'My KPIs', rankings: 'Rankings', reports: 'Reports', 'org-fit': 'Org Fit Scores', admin: 'Admin Settings' }
 
 export default function Layout({ route, children }) {
   const { state, setRole, setViewCycle } = useStore()
