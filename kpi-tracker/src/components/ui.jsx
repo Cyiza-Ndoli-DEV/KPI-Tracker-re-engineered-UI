@@ -92,15 +92,40 @@ export function ScoreDot({ value, size = 'md', title, muted }) {
   return (
     <span className={`score-dot ${size} ${tone}`} title={title ?? `${round(v, 1)}%`}>
       <svg viewBox="0 0 36 36" aria-hidden="true">
-        <circle cx="18" cy="18" r="15.5" className="sd-track" />
-        <circle cx="18" cy="18" r="15.5" className="sd-fill" pathLength="100" strokeDasharray={`${Math.min(100, Math.max(0, v))} 100`} />
+        <circle cx="18" cy="18" r="16" className="sd-track" />
+        <circle cx="18" cy="18" r="16" className="sd-fill" pathLength="100" strokeDasharray={`${Math.min(100, Math.max(0, v))} 100`} />
       </svg>
       <b>{txt}</b>
     </span>
   )
 }
 
-export function Ring({ value = 0, size = 76, stroke = 8, color = 'var(--blue-600)', track = '#e5ecf8', label, sub, textColor }) {
+/** Progress bar with the percentage beside it — the reports use this instead of score circles. */
+export function PctBar({ value, width = 90, muted, title }) {
+  const v = Number(value) || 0
+  const tone = muted ? 'gray' : toneFor(v)
+  return (
+    <div className="pct-bar" title={title ?? `${round(v, 1)}%`}>
+      <div style={{ width }}><Progress value={v} tone={tone} /></div>
+      <b className={`pct ${tone || ''}`}>{Math.round(v)}%</b>
+    </div>
+  )
+}
+
+/** Headline score for report headers: big percentage, a label and a bar (no circle). */
+export function ScoreTile({ value, label, width = 120 }) {
+  const v = Number(value) || 0
+  const tone = toneFor(v)
+  return (
+    <div className="score-tile">
+      <div className={`v pct ${tone || ''}`}>{round(v, 0)}%</div>
+      <div className="tiny muted">{label}</div>
+      <div style={{ width }} className="mt-4"><Progress value={v} tone={tone} /></div>
+    </div>
+  )
+}
+
+export function Ring({ value = 0, size = 76, stroke = 8, color = 'var(--blue-600)', track = '#e6ebf2', label, sub, textColor }) {
   const r = (size - stroke) / 2
   const c = 2 * Math.PI * r
   const v = Math.max(0, Math.min(100, value || 0))
@@ -113,7 +138,7 @@ export function Ring({ value = 0, size = 76, stroke = 8, color = 'var(--blue-600
       <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center', color: textColor }}>
         <div>
           <div style={{ fontWeight: 800, fontSize: size > 90 ? 22 : size > 60 ? 16 : 12, lineHeight: 1 }}>{label ?? `${round(value, 0)}%`}</div>
-          {sub && size >= 56 && <div style={{ fontSize: size > 80 ? 10.5 : 9, opacity: 0.75, marginTop: 2, maxWidth: size - 14, lineHeight: 1.1 }}>{sub}</div>}
+          {sub && size >= 56 && <div style={{ fontSize: size > 80 ? 10 : 9, opacity: 0.8, marginTop: 3, maxWidth: size - stroke * 2 - 14, marginInline: 'auto', lineHeight: 1.15, whiteSpace: 'normal' }}>{sub}</div>}
         </div>
       </div>
     </div>

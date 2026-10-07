@@ -172,20 +172,24 @@ export function StoreProvider({ children }) {
       }),
 
       // ---------- results ----------
-      addUpdate: ({ allocationId, date, value, completion, reason }) => mutate((n) => {
+      addUpdate: ({ allocationId, date, value, completion, comment }) => mutate((n) => {
         const a = byId(n.allocations, allocationId)
         const kpi = byId(n.kpis, a.kpiId)
         const prev = allocationUpdates(n, allocationId).slice(-1)[0]
-        n.updates.push({ id: uid('u'), allocationId, kpiId: a.kpiId, periodId: a.periodId, date, value: Number(value), completion, reason, submittedAt: nowISO(), submittedBy: currentUserId(n) })
-        log(n, { action: 'Result recorded', goalId: kpi.goalId, kpiId: kpi.id, allocationId, subject: unitName(n, a), oldValue: kpi.type === 'sum' ? `Total ${money(kpi, cumulativeAt(n, allocationId))}` : prev ? fmtU(kpi, prev) : '—', newValue: kpi.type === 'sum' ? `${fmtU(kpi, { value })} achieved (as of ${date}) → total ${money(kpi, cumulativeAt(n, allocationId) + Number(value))}` : `${fmtU(kpi, { value, completion })} (as of ${date})` })
+        n.updates.push({ id: uid('u'), allocationId, kpiId: a.kpiId, periodId: a.periodId, date, value: Number(value), completion, comment, submittedAt: nowISO(), submittedBy: currentUserId(n) })
+        log(n, { action: 'Result recorded', goalId: kpi.goalId, kpiId: kpi.id, allocationId, subject: unitName(n, a), oldValue: kpi.type === 'sum' ? `Total ${money(kpi, cumulativeAt(n, allocationId))}` : prev ? fmtU(kpi, prev) : '—', newValue: kpi.type === 'sum' ? `${fmtU(kpi, { value })} achieved (as of ${date}) → total ${money(kpi, cumulativeAt(n, allocationId) + Number(value))}` : `${fmtU(kpi, { value, completion })} (as of ${date})`, comment: comment || undefined })
       }),
       editUpdate: (updateId, patch) => mutate((n) => {
         const u = byId(n.updates, updateId)
         const kpi = byId(n.kpis, u.kpiId)
+        const oldComment = u.comment ?? u.reason ?? ''
         const before = fmtU(kpi, u) + ` (as of ${u.date})`
         const grant = n.editRequests.find((r) => r.updateId === updateId && r.status === 'granted')
         Object.assign(u, patch, { value: Number(patch.value ?? u.value), editedAt: nowISO() })
-        log(n, { action: 'Result edited', goalId: kpi.goalId, kpiId: kpi.id, allocationId: u.allocationId, subject: unitName(n, byId(n.allocations, u.allocationId)), oldValue: before, newValue: fmtU(kpi, u) + ` (as of ${u.date})`, grantedBy: grant?.grantedBy })
+        delete u.reason
+        const newComment = u.comment || ''
+        const commentChanged = oldComment !== newComment
+        log(n, { action: 'Result edited', goalId: kpi.goalId, kpiId: kpi.id, allocationId: u.allocationId, subject: unitName(n, byId(n.allocations, u.allocationId)), oldValue: before + (commentChanged ? ` · comment: ${quote(oldComment) || '—'}` : ''), newValue: fmtU(kpi, u) + ` (as of ${u.date})` + (commentChanged ? ` · comment: ${quote(newComment) || '—'}` : ''), comment: newComment || undefined, grantedBy: grant?.grantedBy })
       }),
       requestEdit: (updateId, reason) => mutate((n) => {
         const u = byId(n.updates, updateId)
@@ -417,6 +421,8 @@ function money(kpi, v) {
   if (kpi.unit === 'UGX' || kpi.unit === 'USD') return `${kpi.unit} ${Number(v).toLocaleString()}`
   return `${Number(v).toLocaleString()}${kpi.unit === '%' ? '%' : ' ' + kpi.unit}`
 }
+
+const quote = (t) => (t ? `“${t}”` : '')
 
 function fmtU(kpi, u) {
   if (kpi.type === 'completion') return u.completion === 'full' ? 'Fully achieved' : u.completion === 'none' ? 'Not achieved' : `Partially (${u.value}%)`

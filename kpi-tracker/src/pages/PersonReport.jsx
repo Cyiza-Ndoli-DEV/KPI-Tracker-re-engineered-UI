@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { Download, ListChecks, LineChart as LineIcon, Users, Gauge, CalendarClock, LifeBuoy } from 'lucide-react'
 import { useStore } from '../store'
-import { BackLink, Badge, Avatar, Ring, Progress, Empty, Link, Seg, toneFor, useFeedback, navigate, ScoreDot } from '../components/ui'
+import { BackLink, Badge, Avatar, Progress, Empty, Link, Seg, toneFor, useFeedback, navigate, PctBar, ScoreTile } from '../components/ui'
 import { valueLabel, LineChart } from '../components/KpiWidgets'
 import CountChart from '../components/CountChart'
 import { byId, band, progressSeries, teamMembersOf, personScore, KPI_TYPES } from '../lib/calc'
@@ -48,7 +48,7 @@ export default function PersonReport({ id }) {
         <BackLink to="/reports?tab=individuals" label="Reports · Individuals" />
         <div className="card card-pad">
           <div className="row top wrap gap-20">
-            <Ring value={sc.final ?? 0} size={76} stroke={7} sub="final score" />
+            <ScoreTile value={sc.final ?? 0} label="final score" width={100} />
             <div style={{ flex: 1, minWidth: 320 }}>
               <div className="row wrap gap-6 mb-8">
                 <Badge tone="blue">Individual performance report</Badge>
@@ -89,7 +89,7 @@ export default function PersonReport({ id }) {
                     <td><div className="tiny muted">{it.goal.name}</div><div className="semi small">{it.kpi.name} <span className="tiny muted">· {KPI_TYPES[it.kpi.type].label}</span> {i === 0 && rep.items.length > 1 && <Badge tone="red">weakest</Badge>}</div></td>
                     <td className="right mono small">{it.kpi.type === 'completion' ? 'Full' : valueLabel(it.kpi, it.stats.target)}</td>
                     <td className="right mono small bold">{valueLabel(it.kpi, it.stats.current)}</td>
-                    <td><ScoreDot value={it.stats.progress} /></td>
+                    <td><PctBar value={it.stats.progress} /></td>
                     <td className="right mono small">{it.count}</td>
                     <td className="right small">{it.avgGap === null ? '—' : `${round(it.avgGap, 0)} days`}</td>
                     <td className="right small">{it.last ? fmtShortDate(it.last) : <span className="badge red">never</span>}{it.since !== null && it.since > (state.settings.staleDays ?? 30) && <div><span className="badge amber" style={{ padding: '0 6px' }}>{it.since}d ago</span></div>}</td>

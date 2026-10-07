@@ -136,7 +136,7 @@ export function UpdateModal({ alloc, update, onClose }) {
   const editingOdd = update?.completion === 'partial' && !presets.includes(Number(update.value))
   const [partial, setPartial] = useState(update?.completion === 'partial' ? (editingOdd ? 'other' : update.value) : presets[1] ?? presets[0])
   const [otherPct, setOtherPct] = useState(editingOdd ? update.value : '')
-  const [reason, setReason] = useState(update?.reason || '')
+  const [comment, setComment] = useState(update?.comment ?? update?.reason ?? '')
   const [tried, setTried] = useState(false)
 
   const target = kpi.type === 'sum' ? alloc.target : periodTarget(kpi, period)
@@ -155,14 +155,14 @@ export function UpdateModal({ alloc, update, onClose }) {
   else if (date > maxDate) errs.date = `Can't be after ${fmtDate(maxDate)}.`
   if (kpi.type === 'completion') {
     if (!completion) errs.value = 'Choose Fully, Partially or Not achieved.'
-    if (completion === 'none' && !reason.trim()) errs.reason = 'A reason is required when not achieved.'
+    if (completion === 'none' && !comment.trim()) errs.comment = 'Explain why it was not achieved.'
     if (completion === 'partial' && partial === 'other' && !(Number(otherPct) >= 1 && Number(otherPct) <= 99)) errs.partial = 'Enter a percentage between 1 and 99.'
   } else if (value === '' || Number(value) < 0) errs.value = 'Enter a value of 0 or more.'
 
   const save = () => {
     setTried(true)
     if (Object.keys(errs).length) return
-    const payload = { date, value: finalValue, completion: kpi.type === 'completion' ? completion : undefined, reason: completion === 'none' ? reason : undefined }
+    const payload = { date, value: finalValue, completion: kpi.type === 'completion' ? completion : undefined, comment: comment.trim() || undefined }
     if (update) editUpdate(update.id, payload)
     else addUpdate({ allocationId: alloc.id, ...payload })
     const chain = []
@@ -227,11 +227,6 @@ export function UpdateModal({ alloc, update, onClose }) {
                 </div>
               </Field>
             )}
-            {completion === 'none' && (
-              <Field label="Reason" required error={tried ? errs.reason : undefined}>
-                <textarea className={`textarea ${tried && errs.reason ? 'invalid' : ''}`} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why was it not achieved?" />
-              </Field>
-            )}
           </>
         ) : (
           <Field
@@ -250,6 +245,21 @@ export function UpdateModal({ alloc, update, onClose }) {
             )}
           </Field>
         )}
+        <Field
+          label="Comment"
+          required={completion === 'none'}
+          error={tried ? errs.comment : undefined}
+          hint={`${completion === 'none' ? 'Required when not achieved.' : 'Optional.'} Share how it went: what helped, any blockers, or what you expect next. It is kept with this result and in the audit log.`}
+        >
+          <textarea
+            className={`textarea ${tried && errs.comment ? 'invalid' : ''}`}
+            value={comment}
+            maxLength={500}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder={completion === 'none' ? 'Why was it not achieved? What will change?' : 'e.g. Two big clients paid early; I expect a slower October because of the holidays.'}
+          />
+          <div className="tiny muted right">{comment.length}/500</div>
+        </Field>
       </div>
     </Modal>
   )

@@ -1,10 +1,11 @@
 import { Fragment, useMemo, useState } from 'react'
-import { BarChart3, Trophy, Building2, UsersRound, User, Target, ClipboardCheck, Download, Printer, Lightbulb, TrendingUp, Gauge, Users, CalendarClock, Info, Search, ChevronRight, ChevronDown, AlertTriangle, LifeBuoy, UserX, FileSpreadsheet, ArrowRight, LineChart as LineIcon } from 'lucide-react'
+import { BarChart3, Trophy, Building2, UsersRound, User, Target, ClipboardCheck, Download, Printer, Lightbulb, TrendingUp, Gauge, Users, CalendarClock, Info, Search, ChevronRight, ChevronDown, ChevronsDownUp, ChevronsUpDown, AlertTriangle, LifeBuoy, UserX, FileSpreadsheet, ArrowRight, LineChart as LineIcon } from 'lucide-react'
 import { useStore, useCurrentUser } from '../store'
-import { Tabs, Badge, Progress, Avatar, Empty, Field, Link, Seg, toneFor, useFeedback, navigate, ScoreDot } from '../components/ui'
+import { Tabs, Badge, Progress, Avatar, Empty, Field, Link, Seg, toneFor, useFeedback, navigate, PctBar } from '../components/ui'
 import { valueLabel, LineChart } from '../components/KpiWidgets'
 import BandScale from '../components/BandScale'
 import CountChart from '../components/CountChart'
+import { Toggle, KpiIcon, useOpenState } from '../components/Hierarchy'
 import Rankings from './Rankings'
 import { byId, bandsOf, cycleGoals, goalKpis, goalProgress, currentPeriod, progressSeries, KPI_TYPES } from '../lib/calc'
 import { levelRows, kpiRows, unassignedStaff, unsharedNodes, updatesOverTime, recentUpdates, bandCounts, reportDefaultAsOf } from '../lib/reports'
@@ -30,6 +31,8 @@ export default function Reports({ query = {} }) {
   const kpiOptions = goals.filter((g) => goalId === 'all' || g.id === goalId).flatMap((g) => goalKpis(state, g.id))
   const filter = { goalId: goalId === 'all' ? undefined : goalId, kpiId: kpiId === 'all' ? undefined : kpiId }
   const pipBelow = state.settings.pipBelow ?? 50
+  const { isOpen, toggle, setAll } = useOpenState(() => false)
+  const allOpen = goals.length > 0 && goals.every((g) => isOpen(g.id))
 
   const data = useMemo(() => {
     const people = levelRows(state, cycle, 'individual', asOf, dept, filter)
@@ -118,6 +121,8 @@ function Overview({ data, cycle, asOf, go, filter }) {
   const counts = bandCounts(data.people)
   const insights = buildInsights(state, data)
   const pipBelow = state.settings.pipBelow ?? 50
+  const { isOpen, toggle, setAll } = useOpenState(() => false)
+  const allOpen = goals.length > 0 && goals.every((g) => isOpen(g.id))
 
   return (
     <div className="col gap-16">
@@ -132,18 +137,34 @@ function Overview({ data, cycle, asOf, go, filter }) {
 
       <div className="grid" style={{ gridTemplateColumns: 'minmax(0,1.25fr) minmax(0,1fr)', alignItems: 'start' }}>
         <div className="card">
-          <div className="card-head"><Target size={18} color="var(--blue-600)" /><h3>Goals and their KPIs</h3><div className="spacer" /><span className="tiny muted">as of {fmtShortDate(asOf)}</span></div>
-          <div className="card-body col gap-14">
-            {goals.map((g) => {
+          <div className="card-head">
+            <Target size={18} color="var(--blue-600)" /><h3>Goals and their KPIs</h3><div className="spacer" /><span className="tiny muted">as of {fmtShortDate(asOf)}</span>
+            <button className="btn ghost xs no-print" onClick={() => setAll(goals.map((g) => g.id), !allOpen)}>{allOpen ? <><ChevronsDownUp size={13} /> Collapse all</> : <><ChevronsUpDown size={13} /> Expand all</>}</button>
+          </div>
+          <div className="goal-list">
+            {goals.map((g, i) => {
               const ks = data.kpis.filter((k) => k.goal.id === g.id)
-              const p = goalProgress(state, g, asOf)
+              const gOpen = isOpen(g.id)
               return (
-                <div key={g.id} className="row gap-12">
-                  <ScoreDot value={p} size="lg" />
-                  <div className="spacer">
-                    <Link to={`/goals/${g.id}`} className="semi" style={{ color: 'inherit' }}>{g.name}</Link>
-                    <div className="row wrap gap-10 mt-4">{ks.map((k) => <span key={k.kpi.id} className="row gap-4 tiny muted"><ScoreDot value={k.stats.progress} size="sm" />{k.kpi.name} <span>({k.kpi.weight}%)</span></span>)}</div>
+                <div key={g.id} className="goal-item">
+                  <div className="goal-item-row clickable" onClick={() => ks.length && toggle(g.id)}>
+                    <Toggle open={gOpen} onClick={() => toggle(g.id)} disabled={!ks.length} />
+                    <span className="goal-no">{i + 1}</span>
+                    <div className="spacer" style={{ minWidth: 0 }}>
+                      <Link to={`/goals/${g.id}`} className="semi" style={{ color: 'inherit' }} onClick={(e) => e.stopPropagation()}>{g.name}</Link>
+                      <div className="tiny muted">{ks.length} KPI{ks.length === 1 ? '' : 's'}</div>
+                    </div>
+                    <PctBar value={goalProgress(state, g, asOf)} />
                   </div>
+                  {gOpen && ks.map((k) => (
+                    <div key={k.kpi.id} className="goal-item-row kpi">
+                      <KpiIcon />
+                      <div className="spacer small" style={{ minWidth: 0 }}>
+                        <Link to={`/kpis/${k.kpi.id}`} style={{ color: 'inherit' }}>{k.kpi.name}</Link> <span className="tiny muted">· {k.kpi.weight}% of goal</span>
+                      </div>
+                      <PctBar value={k.stats.progress} />
+                    </div>
+                  ))}
                 </div>
               )
             })}
@@ -181,9 +202,8 @@ function Overview({ data, cycle, asOf, go, filter }) {
             <div className="col gap-8">
               {data.departments.map((d) => (
                 <div key={d.unit.id} className="row gap-8 small">
-                  <ScoreDot value={d.score} size="sm" />
-                  <span className="semi spacer">{d.name}</span>
-                  <span className="tiny muted">{d.people} people</span>
+                  <span className="semi spacer">{d.name} <span className="tiny muted">· {d.people} people</span></span>
+                  <PctBar value={d.score} />
                 </div>
               ))}
             </div>
@@ -343,7 +363,7 @@ function LevelReport({ rows, level, onExport }) {
               <th className="right">KPIs</th>
               {isPerson && <th className="right">KPI score</th>}
               {isPerson && <th className="right">Org Fit</th>}
-              <th style={{ width: 90 }}>{isPerson ? 'Final score' : 'Score'}</th>
+              <th style={{ width: 150 }}>{isPerson ? 'Final score' : 'Score'}</th>
               <th>Band</th>
               <th>Weakest KPI</th>
               <th className="right">Last result</th>
@@ -372,7 +392,7 @@ function LevelReport({ rows, level, onExport }) {
                     <td className="right mono">{r.items.length}</td>
                     {isPerson && <td className="right mono small">{fmtPct(r.kpiScore, 1)}{r.isLead && <div className="tiny muted">team avg</div>}</td>}
                     {isPerson && <td className="right mono small">{r.orgFit === null ? <span className="tiny muted">pending</span> : `${r.orgFit}%`}</td>}
-                    <td><ScoreDot value={r.score} /></td>
+                    <td><PctBar value={r.score} /></td>
                     <td><Badge tone={r.band.tone}>{r.band.label}</Badge></td>
                     <td className="tiny">{r.worst ? <><span style={{ color: 'var(--red)' }}>▼</span> {r.worst.kpi.name} <b>{fmtPct(r.worst.stats.progress, 0)}</b></> : '—'}</td>
                     <td className="right tiny nowrap">
@@ -394,7 +414,7 @@ function LevelReport({ rows, level, onExport }) {
                                 <td className="right mono small">{it.kpi.type === 'sum' ? fmtPct(it.alloc.percent, 2) : 'same'}</td>
                                 <td className="right mono small">{it.kpi.type === 'completion' ? 'Full' : valueLabel(it.kpi, it.stats.target)}</td>
                                 <td className="right mono small bold">{valueLabel(it.kpi, it.stats.current)}</td>
-                                <td><ScoreDot value={it.stats.progress} /></td>
+                                <td style={{ width: 150 }}><PctBar value={it.stats.progress} /></td>
                                 <td className="right"><Link to={`/kpis/${it.kpi.id}/${it.alloc.id}`} className="tiny no-print">Open KPI →</Link></td>
                               </tr>
                             ))}

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Trophy, Info } from 'lucide-react'
 import { useStore } from '../store'
-import { Field, Avatar, Badge, Empty, ScoreDot } from '../components/ui'
+import { Field, Avatar, Badge, Empty, PctBar, ScoreTile } from '../components/ui'
 import { byId, cycleGoals, goalKpis, unitAllocations, personScore, band } from '../lib/calc'
 import { fmtPct } from '../lib/utils'
 
@@ -72,7 +72,7 @@ export default function Rankings({ embedded = false, deptFilter }) {
                   <div className="tiny muted">{r.p.title} · {byId(state.departments, r.p.departmentId)?.name}</div>
                   <div className="tiny muted mt-4">KPI {fmtPct(r.kpiPart, 0)} · Org Fit {r.orgFit === null ? '—' : `${r.orgFit}%`}</div>
                 </div>
-                <ScoreDot value={r.final} size="lg" />
+                <ScoreTile value={r.final} label="final score" width={90} />
               </div>
             ))}
           </div>
@@ -85,9 +85,9 @@ export default function Rankings({ embedded = false, deptFilter }) {
                   <th>Staff</th>
                   <th>Department / team</th>
                   <th className="right">KPIs</th>
-                  <th className="center">KPI score</th>
-                  <th className="center">Org Fit score</th>
-                  <th className="center">Final score</th>
+                  <th>KPI score</th>
+                  <th>Org Fit score</th>
+                  <th>Final score</th>
                   <th>Band</th>
                 </tr>
               </thead>
@@ -100,9 +100,9 @@ export default function Rankings({ embedded = false, deptFilter }) {
                       <td><div className="row gap-6"><Avatar name={r.p.name} size="sm" /><div><div className="semi nowrap">{r.p.name} {r.isLead && <Badge tone="violet">team lead</Badge>}</div><div className="tiny muted">{r.p.title}</div></div></div></td>
                       <td className="small">{byId(state.departments, r.p.departmentId)?.name}{r.p.teamId ? ` · ${byId(state.teams, r.p.teamId).name}` : ''}</td>
                       <td className="right mono">{r.count}</td>
-                      <td className="center"><ScoreDot value={r.kpiPart} title={r.isLead ? `Average of ${r.members} team members` : 'Average of own KPIs'} />{r.isLead && <div className="tiny muted">team avg</div>}</td>
-                      <td className="center">{r.orgFit === null ? <span className="tiny muted">—</span> : <ScoreDot value={r.orgFit} muted />}</td>
-                      <td className="center"><ScoreDot value={r.final} size="lg" /></td>
+                      <td><PctBar value={r.kpiPart} width={70} title={r.isLead ? `Average of ${r.members} team members` : 'Average of own KPIs'} />{r.isLead && <div className="tiny muted">team avg</div>}</td>
+                      <td>{r.orgFit === null ? <span className="tiny muted">—</span> : <PctBar value={r.orgFit} width={70} muted />}</td>
+                      <td><PctBar value={r.final} width={90} /></td>
                       <td><Badge tone={b.tone}>{b.label}</Badge></td>
                     </tr>
                   )

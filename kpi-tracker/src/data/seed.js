@@ -140,12 +140,18 @@ export function createSeed() {
       'a-esther': ['s-esther', [['2026-05-10', 30e6], ['2026-08-31', 66e6]]],
       'a-ivan': ['s-ivan', [['2026-06-01', 20e6], ['2026-09-15', 41e6]]],
     }
+    const comments = {
+      'a-brian@2026-09-26': 'Two clients paid ahead of schedule. I expect October to be slower because of year-end budget freezes.',
+      'a-sarah@2026-09-20': 'Lost one deal to a competitor on price; two renewals are in the pipeline for October.',
+      'a-joan@2026-09-25': 'First month on the team. Still learning the product but already closing small deals.',
+      'a-peter@2026-09-29': 'Strong quarter thanks to the new referral scheme.',
+    }
     const ids = {}
     // series hold running totals; each update stores the amount achieved since the previous update
     for (const [aid, [sid, pts]] of Object.entries(series)) {
       let prev = 0
       for (const [d, total] of pts) {
-        ids[`${aid}@${d}`] = upd(aid, k, p, sid, d, total - prev)
+        ids[`${aid}@${d}`] = upd(aid, k, p, sid, d, total - prev, comments[`${aid}@${d}`] ? { comment: comments[`${aid}@${d}`] } : {})
         prev = total
       }
     }
@@ -156,7 +162,7 @@ export function createSeed() {
     log({ at: at('2026-01-02', '09:00'), who: 's-joyce', action: 'Goal started', goalId: 'g-rev', kpiId: 'k-rev', subject: 'Increase Revenue', oldValue: 'Ready', newValue: 'Running' })
     log({ at: at('2026-09-01', '09:20'), who: 's-grace', action: 'Member added (equal split)', goalId: 'g-rev', kpiId: 'k-rev', subject: 'Joan Atim → Team A', oldValue: 'Brian, Sarah, Daniel: 33.33% (UGX 100M) each', newValue: 'Brian, Sarah, Daniel, Joan: 25% (UGX 75M) each', note: 'Achievements kept; remaining targets reduced. Joan starts from 1 Sep 2026.' })
     for (const u of updates.filter((x) => x.kpiId === 'k-rev')) {
-      log({ at: u.submittedAt, who: u.submittedBy, action: 'Result recorded', goalId: 'g-rev', kpiId: 'k-rev', allocationId: u.allocationId, subject: staff.find((s) => s.id === u.submittedBy)?.name, oldValue: '—', newValue: `+UGX ${(u.value / 1e6).toFixed(0)}M achieved (as of ${u.date})` })
+      log({ at: u.submittedAt, who: u.submittedBy, action: 'Result recorded', goalId: 'g-rev', kpiId: 'k-rev', allocationId: u.allocationId, subject: staff.find((s) => s.id === u.submittedBy)?.name, oldValue: '—', newValue: `+UGX ${(u.value / 1e6).toFixed(0)}M achieved (as of ${u.date})`, comment: u.comment })
     }
   }
 
@@ -227,7 +233,7 @@ export function createSeed() {
     upd('acp-samuel', k, p, 's-samuel', '2026-07-15', 100, { completion: 'full' })
     upd('acp-faith', k, p, 's-faith', '2026-08-20', 50, { completion: 'partial' })
     upd('acp-kevin', k, p, 's-kevin', '2026-09-05', 75, { completion: 'partial' })
-    upd('acp-lydia', k, p, 's-lydia', '2026-09-18', 0, { completion: 'none', reason: 'Training portal access was delayed; session booked for October.' })
+    upd('acp-lydia', k, p, 's-lydia', '2026-09-18', 0, { completion: 'none', comment: 'Training portal access was delayed; session booked for October.' })
   }
 
   // ---- Goal 4: Improve Client Communication (Completion, two KPIs) ----
@@ -250,7 +256,7 @@ export function createSeed() {
   upd('k-cc1-patrick', 'k-cc1', 'p-k-cc1', 's-patrick', '2026-09-25', 25, { completion: 'partial' })
   upd('k-cc1-diana', 'k-cc1', 'p-k-cc1', 's-diana', '2026-09-02', 100, { completion: 'full' })
   upd('k-cc2-moses', 'k-cc2', 'p-k-cc2', 's-moses', '2026-09-15', 50, { completion: 'partial' })
-  upd('k-cc2-diana', 'k-cc2', 'p-k-cc2', 's-diana', '2026-09-30', 0, { completion: 'none', reason: 'Procedure document not yet shared with the walk-in desk.' })
+  upd('k-cc2-diana', 'k-cc2', 'p-k-cc2', 's-diana', '2026-09-30', 0, { completion: 'none', comment: 'Procedure document not yet shared with the walk-in desk.' })
   log({ at: at('2026-01-02', '09:15'), who: 's-joyce', action: 'Goal started', goalId: 'g-cc', subject: 'Improve Client Communication', oldValue: 'Ready', newValue: 'Running' })
 
   const editRequests = [

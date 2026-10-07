@@ -144,11 +144,11 @@ export default function Kpis() {
                 <th>{treeMode ? 'KPI / owner' : 'KPI'}</th>
                 {!treeMode && <th>Owner</th>}
                 <th>Level</th>
-                <th>{treeMode ? 'Goal' : 'Hierarchy (parent chain)'}</th>
+                {!treeMode && <th>Hierarchy (parent chain)</th>}
                 <th className="right">Share of parent</th>
                 <th className="right">Target</th>
                 <th className="right">Achieved</th>
-                <th style={{ width: 90 }}>Progress</th>
+                <th>Progress</th>
                 <th className="right">Last result</th>
               </tr>
             </thead>
@@ -177,7 +177,7 @@ export default function Kpis() {
                           {n.alloc ? ownerCell : (
                             <div className="row gap-6">
                               <span className="lvl kpi"><Gauge size={14} /></span>
-                              <div><div className="bold">{n.kpi.name}</div><div className="tiny muted">{KPI_TYPES[n.kpi.type].label} · contributes {n.kpi.weight}% to goal</div></div>
+                              <div><div className="bold">{n.kpi.name}</div><div className="tiny muted row gap-6">{KPI_TYPES[n.kpi.type].label} · contributes {n.kpi.weight}% to <Link to={`/goals/${n.goal.id}`} className="goal-chip sm" onClick={(e) => e.stopPropagation()}>{n.goal.name}</Link></div></div>
                             </div>
                           )}
                         </div>
@@ -187,14 +187,14 @@ export default function Kpis() {
                     </td>
                     {!treeMode && <td>{n.alloc ? ownerCell : <span className="small semi">{state.settings.orgName}</span>}</td>}
                     <td><RoleBadge node={n} /></td>
+                    {!treeMode && (
                     <td className="tiny">
-                      {treeMode ? (n.alloc ? '' : <Link to={`/goals/${n.goal.id}`} className="goal-chip" onClick={(e) => e.stopPropagation()}>{n.goal.name}</Link>) : (
                         <div className="path">
                           <Link to={`/goals/${n.goal.id}`} className="goal-chip" onClick={(e) => e.stopPropagation()}>{n.goal.name}</Link>
                           <div className="mt-4 muted">{[...n.path, n.alloc ? n.owner.name : null].filter(Boolean).map((p, i, arr) => <span key={i}>{i === arr.length - 1 ? <b style={{ color: 'var(--text)' }}>{p}</b> : p}{i < arr.length - 1 ? ' › ' : ''}</span>)}{!n.alloc && <b style={{ color: 'var(--text)' }}>{state.settings.orgName}</b>}</div>
                         </div>
-                      )}
                     </td>
+                    )}
                     <td className="right small nowrap">{n.alloc ? (n.kpi.type === 'sum' ? <><b>{fmtPct(n.alloc.percent, 2)}</b><div className="tiny muted">of {n.parentName}</div></> : <span className="muted">same target</span>) : <span className="muted">—</span>}</td>
                     <td className="right mono small nowrap">{n.kpi.type === 'completion' ? 'Full' : valueLabel(n.kpi, left && n.alloc.targetBeforeLeave ? n.alloc.targetBeforeLeave : n.stats.target)}</td>
                     <td className="right mono small bold nowrap">{valueLabel(n.kpi, n.stats.current)}</td>

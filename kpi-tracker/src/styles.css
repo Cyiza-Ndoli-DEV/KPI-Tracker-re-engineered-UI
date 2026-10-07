@@ -398,7 +398,7 @@ button { font-family: inherit; }
 .goals-table .goal-row td { background: #f5f8ff; border-top: 2px solid var(--blue-100); }
 .goals-table .goal-group:first-of-type .goal-row td { border-top: 0; }
 .goals-table .kpi-row td { padding-top: 9px; padding-bottom: 9px; }
-.goals-table .goal-no { width: 22px; height: 22px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 11px; font-weight: 800; color: white; background: var(--brand-grad); flex-shrink: 0; }
+.goals-table .goal-no, .goal-list .goal-no { width: 22px; height: 22px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 11px; font-weight: 800; color: white; background: var(--brand-grad); flex-shrink: 0; }
 .table-toolbar { padding: 10px 14px; gap: 10px; border-bottom: 1px solid var(--border); }
 .goals-table .alloc-row td { padding-top: 6px; padding-bottom: 6px; background: #fcfdff; cursor: pointer; }
 .goals-table .alloc-row:hover td { background: var(--blue-50); }
@@ -407,7 +407,6 @@ button { font-family: inherit; }
 .alloc-row .lvl { width: 22px; height: 22px; border-radius: 7px; }
 .goal-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; background: #fdf1df; color: #8a4f06; font-size: 12px; font-weight: 600; text-decoration: none; white-space: nowrap; }
 .goal-chip:hover { background: #fbe3bf; }
-.goals-table td:nth-child(7) { min-width: 150px; }
 
 /* reports */
 .g-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
@@ -495,20 +494,34 @@ button { font-family: inherit; }
 .table th.center, .table td.center { text-align: center; }
 
 /* compact score circle (replaces progress bars) */
-.score-dot { position: relative; display: inline-grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; vertical-align: middle; }
-.score-dot.sm { width: 36px; height: 36px; }
-.score-dot.lg { width: 56px; height: 56px; }
+.score-dot { position: relative; display: inline-grid; place-items: center; width: 42px; height: 42px; flex-shrink: 0; vertical-align: middle; border-radius: 50%; background: var(--surface); }
+.score-dot.sm { width: 34px; height: 34px; }
+.score-dot.lg { width: 54px; height: 54px; }
 .score-dot svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-.score-dot .sd-track { fill: var(--sd-bg); stroke: var(--sd-track); stroke-width: 3.2; }
-.score-dot .sd-fill { fill: none; stroke: var(--sd-c); stroke-width: 3.2; stroke-linecap: round; }
-.score-dot b { position: relative; font-size: 11.5px; font-weight: 800; color: var(--sd-text); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.score-dot .sd-track { fill: none; stroke: #e6ebf2; stroke-width: 3; }
+.score-dot .sd-fill { fill: none; stroke: var(--sd-c); stroke-width: 3; stroke-linecap: round; transition: stroke-dasharray .4s ease; }
+.score-dot.sm .sd-track, .score-dot.sm .sd-fill { stroke-width: 3.4; }
+.score-dot.lg .sd-track, .score-dot.lg .sd-fill { stroke-width: 2.6; }
+.score-dot b { position: relative; font-size: 11px; font-weight: 700; color: var(--sd-text); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; line-height: 1; }
 .score-dot.sm b { font-size: 10px; }
-.score-dot.lg b { font-size: 14px; }
-.score-dot.green { --sd-c: #16a34a; --sd-bg: #ecfdf3; --sd-track: #c9f0d8; --sd-text: #12672f; }
-.score-dot.blue, .score-dot { --sd-c: #2563eb; --sd-bg: #eef4ff; --sd-track: #d2e1fd; --sd-text: #1d4ed8; }
-.score-dot.amber { --sd-c: #f59e0b; --sd-bg: #fff8e8; --sd-track: #fde7b5; --sd-text: #a15c00; }
-.score-dot.red { --sd-c: #ef4444; --sd-bg: #fef1f1; --sd-track: #fbd0d0; --sd-text: #b42318; }
-.score-dot.gray { --sd-c: #94a3b8; --sd-bg: #f3f5f9; --sd-track: #e2e8f0; --sd-text: #64748b; }
+.score-dot.lg b { font-size: 13.5px; }
+.score-dot.green { --sd-c: #16a34a; --sd-text: #15803d; }
+.score-dot.blue, .score-dot { --sd-c: #2563eb; --sd-text: #1d4ed8; }
+.score-dot.amber { --sd-c: #f59e0b; --sd-text: #b45309; }
+.score-dot.red { --sd-c: #ef4444; --sd-text: #b91c1c; }
+.score-dot.gray { --sd-c: #94a3b8; --sd-text: #64748b; }
+
+/* reports: progress bar + percentage, and the goal → KPI dropdown list */
+.pct-bar { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.pct-bar .pct { min-width: 36px; text-align: right; font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--blue-700); }
+.pct-bar .pct.green { color: var(--green); } .pct-bar .pct.amber { color: #b45309; } .pct-bar .pct.red { color: var(--red); }
+.goal-list { padding: 4px 0; }
+.goal-item { border-bottom: 1px solid var(--border); }
+.goal-item:last-child { border-bottom: 0; }
+.goal-item-row { display: flex; align-items: center; gap: 8px; padding: 10px 18px; }
+.goal-item-row.clickable { cursor: pointer; }
+.goal-item-row.clickable:hover { background: var(--surface-2); }
+.goal-item-row.kpi { padding: 7px 18px 7px 66px; background: var(--surface-2); border-top: 1px solid var(--border); }
 
 
 
@@ -517,3 +530,29 @@ button { font-family: inherit; }
 .goals-table td:first-child, .kpi-nodes td:first-child { min-width: 230px; }
 .person-name-link { color: var(--blue-700); text-decoration: none; }
 .person-name-link:hover { text-decoration: underline; }
+
+/* comment left with a result update, shown in the audit log */
+.audit-comment { display: flex; align-items: flex-start; gap: 5px; margin-top: 4px; padding: 5px 8px; border-left: 3px solid var(--blue-500); background: var(--blue-50); border-radius: 0 6px 6px 0; font-size: 12px; color: var(--text-2); max-width: 320px; white-space: normal; }
+.audit-comment svg { flex-shrink: 0; margin-top: 2px; color: var(--blue-600); }
+
+/* ---------- table rhythm (applies everywhere) ----------
+   Rows stay compact: the score circle is smaller inside tables, and in the wide
+   hierarchy tables the name column takes the spare width while every other
+   column hugs its content, so values sit together instead of drifting apart. */
+.table td { padding-top: 9px; padding-bottom: 9px; }
+.table .score-dot { width: 34px; height: 34px; }
+.table .score-dot b { font-size: 10px; }
+.table .score-dot.lg { width: 44px; height: 44px; }
+.table .score-dot.lg b { font-size: 11.5px; }
+.kpi-nodes th:not(:first-child), .kpi-nodes td:not(:first-child),
+.goals-table th:not(:first-child), .goals-table td:not(:first-child) { width: 1%; white-space: nowrap; padding-left: 18px; padding-right: 18px; }
+.kpi-nodes th:last-child, .kpi-nodes td:last-child,
+.goals-table th:last-child, .goals-table td:last-child { padding-right: 20px; }
+.kpi-nodes th:first-child, .kpi-nodes td:first-child,
+.goals-table th:first-child, .goals-table td:first-child { padding-left: 16px; }
+.goal-chip.sm { padding: 1px 7px; font-size: 11px; }
+
+.pct-bar .pct.gray { color: var(--muted); }
+.score-tile { display: flex; flex-direction: column; align-items: flex-start; flex-shrink: 0; min-width: 90px; }
+.score-tile .v { font-size: 26px; font-weight: 800; line-height: 1.05; letter-spacing: -0.02em; color: var(--blue-700); }
+.score-tile .v.green { color: var(--green); } .score-tile .v.amber { color: #b45309; } .score-tile .v.red { color: var(--red); }

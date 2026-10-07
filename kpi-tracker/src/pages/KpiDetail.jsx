@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronRight, UserPlus, RotateCcw, Eraser, Copy, History, ListChecks, ScrollText, GitBranch, LineChart as LineIcon, Lock, Unlock, PencilLine, Send, Target as TargetIcon } from 'lucide-react'
+import { ChevronRight, UserPlus, RotateCcw, Eraser, Copy, History, ListChecks, ScrollText, MessageSquareText, GitBranch, LineChart as LineIcon, Lock, Unlock, PencilLine, Send, Target as TargetIcon } from 'lucide-react'
 import { useStore, useCurrentUser } from '../store'
 import { BackLink, Ring, Badge, Link, Empty, Tabs, Modal, Field, Alert, Avatar, useFeedback, Progress, toneFor, GoalStatus, ScoreDot } from '../components/ui'
 import { AllocationTree, AddMemberModal, UpdateModal, RestartModal, ReuseModal, LineChart, valueLabel } from '../components/KpiWidgets'
@@ -237,7 +237,7 @@ export function UpdateTable({ state, kpi, updates, user, isAdmin, live, onEdit, 
                 <td className="right mono bold">
                   {k.type === 'completion' ? (u.completion === 'full' ? 'Fully achieved' : u.completion === 'none' ? 'Not achieved' : `Partially · ${u.value}%`) : k.type === 'sum' ? `+${valueLabel(k, u.value)}` : valueLabel(k, u.value)}
                   {k.type === 'sum' && <div className="tiny muted" style={{ fontWeight: 400 }}>total {valueLabel(k, cumulativeAt(state, u.allocationId, u))}</div>}
-                  {u.reason && <div className="tiny muted" style={{ fontWeight: 400, maxWidth: 220, marginLeft: 'auto' }}>“{u.reason}”</div>}
+                  {(u.comment || u.reason) && <div className="tiny muted" style={{ fontWeight: 400, maxWidth: 220, marginLeft: 'auto', whiteSpace: 'normal' }}>“{u.comment || u.reason}”</div>}
                 </td>
                 <td className="small muted nowrap">{fmtDateTime(u.submittedAt)}<div className="tiny">by {byId(state.staff, u.submittedBy)?.name}{u.editedAt ? ' · edited' : ''}</div></td>
                 <td>
@@ -275,7 +275,11 @@ export function AuditTable({ state, entries, showKpi }) {
               <td className="small semi nowrap">{byId(state.staff, a.who)?.name || a.who}</td>
               <td><Badge tone={a.action.includes('edit') || a.action.includes('Edit') ? 'violet' : a.action.includes('reset') || a.action.includes('stopped') ? 'red' : 'blue'}>{a.action}</Badge></td>
               {showKpi && <td className="small">{byId(state.kpis, a.kpiId)?.name || '—'}</td>}
-              <td className="small">{a.subject}{a.note && <div className="tiny muted">{a.note}</div>}</td>
+              <td className="small">
+                {a.subject}
+                {a.note && <div className="tiny muted">{a.note}</div>}
+                {a.comment && <div className="audit-comment"><MessageSquareText size={12} /> “{a.comment}”</div>}
+              </td>
               <td className="small muted" style={{ maxWidth: 260 }}>{a.oldValue}</td>
               <td className="small" style={{ maxWidth: 260 }}>{a.newValue}</td>
               <td className="small">{a.grantedBy ? byId(state.staff, a.grantedBy)?.name : <span className="muted">—</span>}</td>
