@@ -1,0 +1,6 @@
+{
+  "installCommand": "cd kpi-tracker && npm install",
+  "buildCommand": "cd kpi-tracker && npm run build",
+  "outputDirectory": "kpi-tracker/dist",
+  "framework": null
+}
