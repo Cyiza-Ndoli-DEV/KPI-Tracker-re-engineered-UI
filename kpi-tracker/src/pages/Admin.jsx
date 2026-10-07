@@ -153,8 +153,8 @@ export default function Admin() {
 
       {section === 'audit' && (
       <div className="card">
-        <div className="card-head"><ScrollText size={18} color="var(--blue-600)" /><h3>Audit log</h3><span className="small muted">who, old value, new value, when, and who granted access</span></div>
-        <AuditTable state={state} entries={state.audit.slice(0, 100)} showKpi />
+        <div className="card-head"><ScrollText size={18} color="var(--blue-600)" /><h3>Audit log</h3><span className="small muted">every change: when, who, old value and new value</span></div>
+        <AuditTable state={state} entries={state.audit} showKpi />
       </div>
       )}
 

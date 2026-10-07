@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronRight, UserPlus, RotateCcw, Eraser, Copy, History, ListChecks, ScrollText, MessageSquareText, GitBranch, LineChart as LineIcon, Lock, Unlock, PencilLine, Send, Target as TargetIcon } from 'lucide-react'
+import { ChevronRight, UserPlus, RotateCcw, Eraser, Copy, History, ListChecks, ScrollText, MessageSquareText, GitBranch, LineChart as LineIcon, Lock, Unlock, PencilLine, Send, Target as TargetIcon, Search, X } from 'lucide-react'
 import { useStore, useCurrentUser } from '../store'
 import { BackLink, Ring, Badge, Link, Empty, Tabs, Modal, Field, Alert, Avatar, useFeedback, Progress, toneFor, GoalStatus, ScoreDot } from '../components/ui'
 import { AllocationTree, AddMemberModal, UpdateModal, RestartModal, ReuseModal, LineChart, valueLabel } from '../components/KpiWidgets'
@@ -262,32 +262,106 @@ export function UpdateTable({ state, kpi, updates, user, isAdmin, live, onEdit, 
   )
 }
 
+// broad groups for the audit "Change" filter (the raw action names are many and specific)
+const AUDIT_GROUPS = [
+  ['results', 'Results recorded / edited', (a) => a.startsWith('Result')],
+  ['access', 'Edit requests & access', (a) => /request|window|unlock|revert/i.test(a)],
+  ['members', 'Members added / left / moved', (a) => a.startsWith('Member') || a === 'Staff left'],
+  ['setup', 'Goal & KPI changes', (a) => /^(Goal|KPI|Shares)/.test(a)],
+  ['periods', 'Periods, resets & cycles', (a) => /restart|reset|Period|Cycle|New target/i.test(a)],
+  ['other', 'Org Fit, settings & teams', (a) => /Org Fit|Settings|Team created/.test(a)],
+]
+
 export function AuditTable({ state, entries, showKpi }) {
+  const [who, setWho] = useState('all')
+  const [group, setGroup] = useState('all')
+  const [kpiId, setKpiId] = useState('all')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  const [q, setQ] = useState('')
+  const LIMIT = 150
+
   if (!entries.length) return <Empty icon={<ScrollText />} title="No changes recorded yet" />
+
+  const people = [...new Set(entries.map((a) => a.who))].map((id) => ({ id, name: byId(state.staff, id)?.name || id })).sort((x, y) => x.name.localeCompare(y.name))
+  const kpis = [...new Set(entries.map((a) => a.kpiId).filter(Boolean))].map((id) => byId(state.kpis, id)).filter(Boolean)
+  const groups = AUDIT_GROUPS.filter(([, , test]) => entries.some((a) => test(a.action)))
+  const s = q.trim().toLowerCase()
+  const shown = [...entries].sort((x, y) => y.at.localeCompare(x.at)).filter((a) => {
+    const day = a.at.slice(0, 10)
+    if (who !== 'all' && a.who !== who) return false
+    if (group !== 'all' && !AUDIT_GROUPS.find(([k]) => k === group)[2](a.action)) return false
+    if (kpiId !== 'all' && a.kpiId !== kpiId) return false
+    if (from && day < from) return false
+    if (to && day > to) return false
+    if (s && ![a.action, a.subject, a.oldValue, a.newValue, a.note, a.comment].join(' ').toLowerCase().includes(s)) return false
+    return true
+  })
+  const filtered = who !== 'all' || group !== 'all' || kpiId !== 'all' || from || to || s
+  const clear = () => { setWho('all'); setGroup('all'); setKpiId('all'); setFrom(''); setTo(''); setQ('') }
+
   return (
-    <div className="scroll-x">
-      <table className="table compact">
-        <thead><tr><th>When</th><th>Who</th><th>Action</th>{showKpi && <th>KPI</th>}<th>Subject</th><th>Old value</th><th>New value</th><th>Access granted by</th></tr></thead>
-        <tbody>
-          {entries.map((a) => (
-            <tr key={a.id}>
-              <td className="small nowrap">{fmtDateTime(a.at)}</td>
-              <td className="small semi nowrap">{byId(state.staff, a.who)?.name || a.who}</td>
-              <td><Badge tone={a.action.includes('edit') || a.action.includes('Edit') ? 'violet' : a.action.includes('reset') || a.action.includes('stopped') ? 'red' : 'blue'}>{a.action}</Badge></td>
-              {showKpi && <td className="small">{byId(state.kpis, a.kpiId)?.name || '—'}</td>}
-              <td className="small">
-                {a.subject}
-                {a.note && <div className="tiny muted">{a.note}</div>}
-                {a.comment && <div className="audit-comment"><MessageSquareText size={12} /> “{a.comment}”</div>}
-              </td>
-              <td className="small muted" style={{ maxWidth: 260 }}>{a.oldValue}</td>
-              <td className="small" style={{ maxWidth: 260 }}>{a.newValue}</td>
-              <td className="small">{a.grantedBy ? byId(state.staff, a.grantedBy)?.name : <span className="muted">—</span>}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      <div className="row wrap table-toolbar audit-filters">
+        <div className="input-group" style={{ width: 210 }}>
+          <Search size={15} style={{ position: 'absolute', left: 10, color: 'var(--muted)' }} />
+          <input className="input" style={{ paddingLeft: 32 }} placeholder="Search changes or comments" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <label className="filter-field">Member
+          <select className="select" value={who} onChange={(e) => setWho(e.target.value)}>
+            <option value="all">Everyone</option>
+            {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </label>
+        <label className="filter-field">Change
+          <select className="select" value={group} onChange={(e) => setGroup(e.target.value)}>
+            <option value="all">All changes</option>
+            {groups.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+          </select>
+        </label>
+        {showKpi && (
+          <label className="filter-field">KPI
+            <select className="select" value={kpiId} onChange={(e) => setKpiId(e.target.value)}>
+              <option value="all">All KPIs</option>
+              {kpis.map((k) => <option key={k.id} value={k.id}>{k.name}</option>)}
+            </select>
+          </label>
+        )}
+        <label className="filter-field">From
+          <input type="date" className="input" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
+        </label>
+        <label className="filter-field">To
+          <input type="date" className="input" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
+        </label>
+        <div className="spacer" />
+        <span className="tiny muted">{shown.length} of {entries.length}</span>
+        {filtered && <button className="btn ghost sm" onClick={clear}><X size={14} /> Clear</button>}
+      </div>
+      {shown.length === 0 ? <Empty icon={<ScrollText />} title="No changes match these filters" /> : (
+        <div className="scroll-x">
+          <table className="table compact audit-table">
+            <colgroup><col style={{ width: 150 }} /><col style={{ width: 160 }} />{showKpi && <col style={{ width: 190 }} />}<col style={{ width: '32%' }} /><col /></colgroup>
+            <thead><tr><th>When</th><th>Who</th>{showKpi && <th>KPI</th>}<th>Old value</th><th>New value</th></tr></thead>
+            <tbody>
+              {shown.slice(0, LIMIT).map((a) => (
+                <tr key={a.id}>
+                  <td className="small nowrap">{fmtDateTime(a.at)}</td>
+                  <td className="small semi nowrap">{byId(state.staff, a.who)?.name || a.who}</td>
+                  {showKpi && <td className="small">{byId(state.kpis, a.kpiId)?.name || '—'}</td>}
+                  <td className="small muted">{a.oldValue}</td>
+                  <td className="small">
+                    {a.newValue}
+                    {a.note && <div className="tiny muted mt-4">{a.note}</div>}
+                    {a.comment && <div className="audit-comment"><MessageSquareText size={12} /> “{a.comment}”</div>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {shown.length > LIMIT && <div className="tiny muted" style={{ padding: '8px 16px' }}>Showing the latest {LIMIT}. Narrow the filters to see older changes.</div>}
+        </div>
+      )}
+    </>
   )
 }
 

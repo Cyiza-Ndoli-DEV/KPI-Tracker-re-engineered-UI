@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Gauge, Search, Target, Wand2, Building2, UsersRound, User, ChevronRight, ChevronDown, X } from 'lucide-react'
+import { Gauge, Search, Target, Wand2, Building2, UsersRound, User, ChevronRight, ChevronDown, ChevronsDownUp, ChevronsUpDown, X } from 'lucide-react'
 import { useStore } from '../store'
 import { Link, Empty, Progress, Avatar, Badge, navigate, toneFor, ScoreDot } from '../components/ui'
 import { byId, cycleGoals, KPI_TYPES } from '../lib/calc'
@@ -28,6 +28,8 @@ export default function Kpis() {
   const [owner, setOwner] = useState('all')
   const [showLeft, setShowLeft] = useState(false)
   const [collapsed, setCollapsed] = useState({})
+  // organization KPIs start closed; open one to see who holds it
+  const isCollapsed = (key) => collapsed[key] ?? key.startsWith('org-')
   const [depthTo, setDepthTo] = useState('individual')
   const isAdmin = state.role === 'admin'
 
@@ -50,16 +52,19 @@ export default function Kpis() {
     ? rows.filter((n) => {
         if (RANK[n.level] > RANK[depthTo]) return false
         if (!n.alloc) return true
-        if (collapsed[`org-${n.kpi.id}`]) return false
+        if (isCollapsed(`org-${n.kpi.id}`)) return false
         let p = n.parentAlloc
         while (p) {
-          if (collapsed[p.id]) return false
+          if (isCollapsed(p.id)) return false
           p = p.parentId ? byId(state.allocations, p.parentId) : null
         }
         return true
       })
     : rows
-  const toggle = (key) => setCollapsed((c) => ({ ...c, [key]: !c[key] }))
+  const toggle = (key) => setCollapsed((c) => ({ ...c, [key]: !isCollapsed(key) }))
+  const orgKeys = rows.filter((n) => !n.alloc).map((n) => `org-${n.kpi.id}`)
+  const allOpen = orgKeys.length > 0 && orgKeys.every((k) => !isCollapsed(k))
+  const setAllOrg = (open) => setCollapsed(Object.fromEntries(orgKeys.map((k) => [k, !open])))
   const clear = () => { setLevel('all'); setOwner('all'); setQ(''); setGoalId('all'); setType('all') }
   const filtered = level !== 'all' || owner !== 'all' || s || goalId !== 'all' || type !== 'all'
   const ownerObj = owner !== 'all' && owners.flatMap((g) => g.list).find((o) => o.id === owner)
@@ -131,14 +136,20 @@ export default function Kpis() {
           {filtered && <button className="btn ghost sm" onClick={clear}><X size={14} /> Clear filters</button>}
         </div>
         <div className="row small muted" style={{ padding: '8px 16px', borderBottom: '1px solid var(--border)' }}>
-          {treeMode && <><DepthControl value={depthTo} onChange={(v) => { setDepthTo(v); setCollapsed({}) }} levels={['organization', 'department', 'team', 'individual']} /><span className="spacer" /></>}
+          {treeMode && <><DepthControl value={depthTo} onChange={(v) => { setDepthTo(v); setAllOrg(v !== 'organization') }} levels={['organization', 'department', 'team', 'individual']} /><span className="spacer" /></>}
+          {treeMode && <button className="btn ghost sm" style={{ order: 3 }} onClick={() => setAllOrg(!allOpen)}>{allOpen ? <><ChevronsDownUp size={14} /> Collapse all</> : <><ChevronsUpDown size={14} /> Expand all</>}</button>}
           {treeMode ? <>Showing the hierarchy: organization KPI → department → team → person. Click any row for its details.</> : <>{rows.length} KPI{rows.length === 1 ? '' : 's'}{ownerObj ? <> held by <b>{ownerObj.name}</b></> : level !== 'all' ? <> at <b>{LEVEL_NAME[level].toLowerCase()}</b> level</> : ''}. The <b>Hierarchy</b> column shows where each one sits.</>}
         </div>
 
         {visible.length === 0 ? (
           <Empty icon={<Gauge />} title="No KPIs match these filters" action={<button className="btn secondary" onClick={clear}>Clear filters</button>} />
         ) : (
-          <table className="table kpi-nodes">
+          <table className={`table kpi-nodes ${treeMode ? 'tree' : 'flat'}`}>
+            {treeMode ? (
+              <colgroup><col style={{ width: '36%' }} /><col style={{ width: '11%' }} /><col style={{ width: '12%' }} /><col style={{ width: '11%' }} /><col style={{ width: '11%' }} /><col style={{ width: '9%' }} /><col style={{ width: '10%' }} /></colgroup>
+            ) : (
+              <colgroup><col style={{ width: '20%' }} /><col style={{ width: '17%' }} /><col style={{ width: '9%' }} /><col style={{ width: '18%' }} /><col style={{ width: '9%' }} /><col style={{ width: '8%' }} /><col style={{ width: '8%' }} /><col style={{ width: '5%' }} /><col style={{ width: '6%' }} /></colgroup>
+            )}
             <thead>
               <tr>
                 <th>{treeMode ? 'KPI / owner' : 'KPI'}</th>
@@ -156,7 +167,7 @@ export default function Kpis() {
               {visible.map((n) => {
                 const Icon = LEVEL_ICON[n.level]
                 const left = n.alloc?.leftDate
-                const isCollapsed = collapsed[n.alloc ? n.alloc.id : `org-${n.kpi.id}`]
+                const closed = isCollapsed(n.alloc ? n.alloc.id : `org-${n.kpi.id}`)
                 const ownerCell = (
                   <div className="row gap-6">
                     {n.owner.person ? <Avatar name={n.owner.name} size="sm" /> : <span className={`lvl ${n.level}`}><Icon size={13} /></span>}
@@ -172,12 +183,12 @@ export default function Kpis() {
                       {treeMode ? (
                         <div className="row gap-6" style={{ paddingLeft: n.depth * 24 }}>
                           {n.children.length ? (
-                            <button className="tree-toggle" onClick={(e) => { e.stopPropagation(); toggle(n.alloc ? n.alloc.id : `org-${n.kpi.id}`) }}>{isCollapsed ? <ChevronRight size={15} /> : <ChevronDown size={15} />}</button>
+                            <button className="tree-toggle" onClick={(e) => { e.stopPropagation(); toggle(n.alloc ? n.alloc.id : `org-${n.kpi.id}`) }}>{closed ? <ChevronRight size={15} /> : <ChevronDown size={15} />}</button>
                           ) : <span style={{ width: 22 }} />}
                           {n.alloc ? ownerCell : (
                             <div className="row gap-6">
                               <span className="lvl kpi"><Gauge size={14} /></span>
-                              <div><div className="bold">{n.kpi.name}</div><div className="tiny muted row gap-6">{KPI_TYPES[n.kpi.type].label} · contributes {n.kpi.weight}% to <Link to={`/goals/${n.goal.id}`} className="goal-chip sm" onClick={(e) => e.stopPropagation()}>{n.goal.name}</Link></div></div>
+                              <div><div className="bold">{n.kpi.name}</div><div className="tiny muted kpi-sub"><span className="nowrap">{KPI_TYPES[n.kpi.type].label} · {n.kpi.weight}% of goal</span><Link to={`/goals/${n.goal.id}`} className="goal-chip sm" onClick={(e) => e.stopPropagation()}>{n.goal.name}</Link></div></div>
                             </div>
                           )}
                         </div>

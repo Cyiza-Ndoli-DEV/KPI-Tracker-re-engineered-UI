@@ -527,7 +527,7 @@ button { font-family: inherit; }
 
 /* wide tables: a little less side padding per cell so every column fits the screen */
 .goals-table th, .goals-table td, .kpi-nodes th, .kpi-nodes td, .report-table th, .report-table td { padding-left: 12px; padding-right: 12px; }
-.goals-table td:first-child, .kpi-nodes td:first-child { min-width: 230px; }
+
 .person-name-link { color: var(--blue-700); text-decoration: none; }
 .person-name-link:hover { text-decoration: underline; }
 
@@ -544,8 +544,11 @@ button { font-family: inherit; }
 .table .score-dot b { font-size: 10px; }
 .table .score-dot.lg { width: 44px; height: 44px; }
 .table .score-dot.lg b { font-size: 11.5px; }
-.kpi-nodes th:not(:first-child), .kpi-nodes td:not(:first-child),
-.goals-table th:not(:first-child), .goals-table td:not(:first-child) { width: 1%; white-space: nowrap; padding-left: 18px; padding-right: 18px; }
+/* hierarchy tables use fixed column widths (colgroup) so columns spread evenly
+   instead of piling up at the right edge */
+.kpi-nodes, .goals-table { table-layout: fixed; }
+.kpi-nodes th, .goals-table th { white-space: normal; }
+.kpi-nodes td:not(:first-child), .goals-table td:not(:first-child) { padding-left: 14px; padding-right: 14px; }
 .kpi-nodes th:last-child, .kpi-nodes td:last-child,
 .goals-table th:last-child, .goals-table td:last-child { padding-right: 20px; }
 .kpi-nodes th:first-child, .kpi-nodes td:first-child,
@@ -556,3 +559,11 @@ button { font-family: inherit; }
 .score-tile { display: flex; flex-direction: column; align-items: flex-start; flex-shrink: 0; min-width: 90px; }
 .score-tile .v { font-size: 26px; font-weight: 800; line-height: 1.05; letter-spacing: -0.02em; color: var(--blue-700); }
 .score-tile .v.green { color: var(--green); } .score-tile .v.amber { color: #b45309; } .score-tile .v.red { color: var(--red); }
+
+.depth-control { flex-shrink: 0; }
+.depth-control > span { white-space: nowrap; }
+.depth-control .seg { flex-wrap: nowrap; }
+.depth-control .seg button { white-space: nowrap; }
+.kpi-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 6px; }
+.audit-table td { vertical-align: top; }
+.audit-filters .input[type=date] { height: 36px; width: 150px; }

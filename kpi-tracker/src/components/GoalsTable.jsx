@@ -36,6 +36,7 @@ export default function GoalsTable({ goals, deep = true }) {
         </button>
       </div>
       <table className="table goals-table">
+        <colgroup><col style={{ width: '30%' }} /><col style={{ width: '8%' }} /><col style={{ width: '9%' }} /><col style={{ width: '11%' }} /><col style={{ width: '13%' }} /><col style={{ width: '12%' }} /><col style={{ width: '8%' }} /><col style={{ width: '9%' }} /></colgroup>
         <thead>
           <tr>
             <th>Goal / KPI / contributor</th>
@@ -44,7 +45,7 @@ export default function GoalsTable({ goals, deep = true }) {
             <th>Period</th>
             <th className="right">Contribution / share</th>
             <th className="right">Achieved / target</th>
-            <th style={{ width: 90 }}>Progress</th>
+            <th>Progress</th>
             <th className="right">Adds to goal</th>
           </tr>
         </thead>
