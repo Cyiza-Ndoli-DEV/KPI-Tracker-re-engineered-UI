@@ -126,7 +126,6 @@ export default function GoalDetail({ id }) {
         <div className="card">
           <div className="card-head">
             <h3>Allocation tree</h3>
-            <span className="small muted">organization → department → team → person, with progress at each node</span>
             <div className="spacer" />
             <Link to={`/kpis/${active.id}`} className="btn ghost sm">Open KPI <ArrowRight size={14} /></Link>
           </div>

@@ -45,7 +45,7 @@ export default function GoalTracking({ state, goal }) {
 
   return (
     <div className="card">
-      <div className="card-head"><TrendingUp size={18} color="var(--blue-600)" /><h3>Goal tracking</h3><span className="small muted">every KPI result moves the goal: progress and achievement over time and at every level</span></div>
+      <div className="card-head"><TrendingUp size={18} color="var(--blue-600)" /><h3>Goal tracking</h3></div>
       <div className="card-body">
         <div className="grid" style={{ gridTemplateColumns: 'minmax(0,1.5fr) minmax(260px,1fr)', alignItems: 'start' }}>
           <div>

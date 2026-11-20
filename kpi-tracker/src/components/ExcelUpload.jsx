@@ -158,7 +158,6 @@ export default function ExcelUpload({ state, draft, onApply, onClose }) {
       size="lg"
       icon={<FileSpreadsheet size={20} />}
       title="Upload allocations from Excel"
-      sub="Download the template, fill it in and upload it. Valid rows are applied; error rows are listed and skipped."
       onClose={onClose}
       footer={
         <>
@@ -175,7 +174,6 @@ export default function ExcelUpload({ state, draft, onApply, onClose }) {
       <div className="grid g-2">
         <div className="card card-pad">
           <div className="row mb-8"><span className="badge blue">1</span><b>Download the template</b></div>
-          <p className="small muted mb-12">Columns: level, unit or person, KPI, target or percentage.</p>
           <button className="btn secondary sm" onClick={downloadTemplate}><Download size={14} /> Download template (.xlsx)</button>
         </div>
         <div className="card card-pad">

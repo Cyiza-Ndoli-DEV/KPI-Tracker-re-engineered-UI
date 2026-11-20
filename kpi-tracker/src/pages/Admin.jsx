@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Settings, Lock, Unlock, X, Plus, ScrollText, Database, RefreshCw, Check, Undo2, Clock, Send, PencilLine, ShieldCheck, UserMinus, Users } from 'lucide-react'
+import { Settings, Lock, Unlock, X, Plus, ScrollText, Database, RefreshCw, Check, Undo2, Clock, UserMinus, Users } from 'lucide-react'
 import { useStore } from '../store'
-import { Field, NumInput, Badge, Tabs, Empty, Avatar, Alert, useFeedback } from '../components/ui'
+import { Field, NumInput, Badge, Tabs, Empty, Avatar, useFeedback } from '../components/ui'
 import { valueLabel } from '../components/KpiWidgets'
 import { AuditTable } from './KpiDetail'
 import { LeaverModal } from '../components/ChangeModals'
@@ -28,7 +28,6 @@ export default function Admin() {
       <div className="page-head" style={{ marginBottom: 0 }}>
         <div>
           <h1>Admin settings</h1>
-          <div className="sub">Set up labels and percentages, edit requests, staff changes and the full audit trail.</div>
         </div>
       </div>
 
@@ -45,25 +44,6 @@ export default function Admin() {
       {section === 'setup' && <SetupPanel />}
 
       {section === 'requests' && (<>
-      <div className="grid g-2">
-        <div className="card">
-          <div className="card-head"><ShieldCheck size={18} color="var(--blue-600)" /><h3>How locked updates are changed</h3></div>
-          <div className="card-body">
-            <div className="timeline">
-              {[
-                [Lock, `Update locks ${state.settings.editWindowDays} days after it is submitted`],
-                [Send, 'The person clicks “Request edit” and gives a reason'],
-                [Unlock, 'Admin extends the edit window for that user and KPI'],
-                [PencilLine, 'The person makes the change (old and new value are logged)'],
-                [Undo2, 'Admin reverts the window — the update is locked again'],
-              ].map(([I, t], i) => (
-                <div key={i} className="tl-item row gap-6 small"><I size={14} color="var(--blue-600)" /> {t}</div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="card">
         <div className="card-head"><Lock size={18} color="var(--blue-600)" /><h3>Edit requests</h3></div>
         <div style={{ padding: '0 20px' }}>
@@ -121,12 +101,11 @@ export default function Admin() {
       <div className="card">
         <div className="card-head">
           <UserMinus size={18} color="var(--blue-600)" /><h3>Staff changes</h3>
-          <span className="small muted">people who left, moved, or were taken off a KPI</span>
           <div className="spacer" />
           <button className="btn primary sm" onClick={() => setLeaver(true)}><UserMinus size={14} /> Record a leaver or a move</button>
         </div>
         {staffMoves.length === 0 ? (
-          <Empty title="No staff changes yet">When someone leaves, their achievements stay in the totals and their unfinished target is shared out, handed over or left unallocated.</Empty>
+          <Empty title="No staff changes yet" />
         ) : (
           <table className="table">
             <thead><tr><th>When</th><th>Person → group</th><th>What happened</th><th>Before</th><th>After</th><th>By</th></tr></thead>
@@ -151,7 +130,7 @@ export default function Admin() {
 
       {section === 'audit' && (
       <div className="card">
-        <div className="card-head"><ScrollText size={18} color="var(--blue-600)" /><h3>Audit log</h3><span className="small muted">every change: when, who, old value and new value</span></div>
+        <div className="card-head"><ScrollText size={18} color="var(--blue-600)" /><h3>Audit log</h3></div>
         <AuditTable state={state} entries={state.audit} showKpi />
       </div>
       )}
@@ -166,13 +145,11 @@ export default function Admin() {
               <div className="stat" style={{ padding: 0 }}><div><div className="v">{state.teams.length}</div><div className="k">Teams</div></div></div>
               <div className="stat" style={{ padding: 0 }}><div><div className="v">{state.staff.filter((s) => s.active !== false).length}</div><div className="k">Active staff</div></div></div>
             </div>
-            <p className="small muted mt-12">Departments, users and roles come from HR. Teams can be created in the KPI Tracker (also from inside the setup wizard); people are never typed in.</p>
           </div>
         </div>
         <div className="card">
           <div className="card-head"><RefreshCw size={18} color="var(--blue-600)" /><h3>Demo data</h3></div>
           <div className="card-body">
-            <p className="small muted mb-12">Everything you do in the prototype is kept in this browser. Reset to start the demo again from the original sample data.</p>
             <button
               className="btn danger"
               onClick={async () => {
@@ -188,7 +165,6 @@ export default function Admin() {
         </div>
       </div>
       )}
-      <Alert>Switch roles in the header to see the Department Head, Team Lead and Employee views.</Alert>
     </div>
   )
 }

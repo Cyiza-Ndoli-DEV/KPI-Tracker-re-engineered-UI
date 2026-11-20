@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CalendarRange, Plus, Play, Square, Wand2, Copy, PencilLine, CheckCircle2, ArrowRight, Trash2 } from 'lucide-react'
+import { CalendarRange, Plus, Play, Square, Wand2, Copy, PencilLine, CheckCircle2, Trash2 } from 'lucide-react'
 import { useStore } from '../store'
 import { Modal, Field, NumInput, Badge, Alert, Ring, useFeedback, navigate, Seg } from '../components/ui'
 import { cycleGoals, cycleScore, band, goalKpis } from '../lib/calc'
@@ -33,28 +33,9 @@ export default function Cycles() {
       <div className="page-head">
         <div>
           <h1>Review cycles</h1>
-          <div className="sub">Create a cycle, activate it, set up its goals in the wizard — then start the next cycle from the previous one.</div>
         </div>
         <div className="spacer" />
         <button className="btn primary" onClick={() => navigate('/cycles/new')}><Plus size={16} /> New review cycle</button>
-      </div>
-
-      <div className="card card-pad mb-16">
-        <div className="row wrap gap-6" style={{ justifyContent: 'space-between' }}>
-          {[
-            ['1', 'Create cycle', 'Name, dates & description'],
-            ['2', 'Activate', 'Only one active at a time'],
-            ['3', 'Set up goals', 'One lane: goal → KPIs → people'],
-            ['4', 'Track', 'People update, results roll up'],
-            ['5', 'End & reuse', 'Next cycle starts from this one'],
-          ].map(([n, t, s], i, arr) => (
-            <div key={n} className="row gap-6" style={{ flex: 1, minWidth: 170 }}>
-              <span className="avatar sm" style={{ background: 'var(--blue-600)' }}>{n}</span>
-              <div><div className="semi small">{t}</div><div className="tiny muted">{s}</div></div>
-              {i < arr.length - 1 && <ArrowRight size={14} color="var(--muted)" style={{ marginLeft: 'auto' }} />}
-            </div>
-          ))}
-        </div>
       </div>
 
       <div className="col gap-16">
@@ -158,11 +139,10 @@ function DeleteCycleModal({ cycle, onClose }) {
             ))}
           </tbody>
         </table>
-        <p className="tiny muted">Staff, departments and teams come from HR and are not affected. The deletion is recorded in the audit log.</p>
         {strict && (
           <>
             <Field label="Reason" required error={tried && !reasonOk ? 'Say why the cycle is deleted.' : undefined}>
-              <input className="input" placeholder="e.g. Test cycle created by mistake" value={reason} onChange={(e) => setReason(e.target.value)} />
+              <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} />
             </Field>
             <Field label={<>Type <b>{cycle.name}</b> to confirm</>} required>
               <input className={`input ${tried && !nameOk ? 'invalid' : ''}`} value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={cycle.name} />
@@ -204,7 +184,6 @@ function ReuseCycleModal({ source, onClose }) {
       size="lg"
       icon={<Copy size={20} />}
       title={`Start from ${source.name}`}
-      sub="Copies every goal, KPI and allocation into editable drafts. Results are never copied, and the old cycle is untouched."
       onClose={onClose}
       footer={<><button className="btn secondary" onClick={onClose}>Cancel</button><button className="btn primary" disabled={bad} onClick={go}><Copy size={15} /> Copy {goals.length} goal{goals.length > 1 ? 's' : ''}</button></>}
     >

@@ -3,12 +3,12 @@ import { uid, sum, round, addDays, daysBetween, maxISO, minISO, nowISO } from '.
 import { byId, currentPeriod, childAllocations, goalKpis } from './calc'
 
 export const STEPS = [
-  { key: 'goal', label: 'Goal', hint: 'Name, type & period' },
-  { key: 'kpis', label: 'KPIs', hint: 'Measurable targets' },
-  { key: 'depts', label: 'Departments', hint: 'Share the target' },
-  { key: 'teams', label: 'Teams', hint: "Split each department's share" },
-  { key: 'people', label: 'Individuals', hint: 'Assign to staff' },
-  { key: 'review', label: 'Review & save', hint: 'Check and confirm' },
+  { key: 'goal', label: 'Goal' },
+  { key: 'kpis', label: 'KPIs' },
+  { key: 'depts', label: 'Departments' },
+  { key: 'teams', label: 'Teams' },
+  { key: 'people', label: 'Individuals' },
+  { key: 'review', label: 'Review & save' },
 ]
 
 export function emptyDraft(cycle, userId) {

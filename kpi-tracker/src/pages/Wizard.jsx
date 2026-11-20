@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { PencilLine, ArrowLeft, ArrowRight, Save, SkipForward, Plus, Trash2, Building2, UsersRound, User, Target, FileSpreadsheet, CheckCircle2, AlertTriangle, AlertCircle, Wand2, Play, Copy, Layers, CalendarRange, Sparkles, Calculator, ChartNoAxesColumn, Flag } from 'lucide-react'
+import { PencilLine, ArrowLeft, ArrowRight, Save, SkipForward, Plus, Trash2, Building2, UsersRound, User, Target, FileSpreadsheet, CheckCircle2, AlertTriangle, AlertCircle, Wand2, Play, Copy, CalendarRange, Sparkles, Calculator, ChartNoAxesColumn, Flag } from 'lucide-react'
 import { useStore, currentUserId } from '../store'
 import { Field, NumInput, Seg, Badge, Alert, Empty, Modal, Link, navigate, useFeedback } from '../components/ui'
 import AllocationEditor, { StaffPicker, equalize, defaultMethod } from '../components/AllocationEditor'
 import ExcelUpload from '../components/ExcelUpload'
 import { STEPS, emptyDraft, newKpi, validateDraft, kpiTarget, deptTarget, teamTarget, groupRows, pctTotal, teamsPctOfDept, directPctOfDept, isSum } from '../lib/draft'
-import { KPI_TYPES, byId, goalKpis } from '../lib/calc'
+import { KPI_TYPES, byId } from '../lib/calc'
 import { UNITS, fmtValue, fmtRange, round, sum, timeAgo, todayISO, fmtDate } from '../lib/utils'
 
 const goalTypeOptions = [
   { type: 'sum', Icon: Calculator },
   { type: 'average', Icon: ChartNoAxesColumn },
   { type: 'completion', Icon: Flag },
-].map(({ type, Icon }) => ({ type, Icon, ...KPI_TYPES[type] }))
+].map(({ type, Icon }) => ({ type, Icon, label: KPI_TYPES[type].label }))
 
 export default function Wizard({ draftId }) {
   const { state, saveDraft, commitDraft, startGoal } = useStore()
@@ -61,9 +61,9 @@ export default function Wizard({ draftId }) {
   }, [draft.kpis, activeKpi])
 
   if (draftId && !existing && !committed.current)
-    return <Empty icon={<AlertTriangle />} title="Draft not found" action={<Link to="/drafts" className="btn primary">Go to drafts</Link>}>It may have been saved as a goal or deleted.</Empty>
+    return <Empty icon={<AlertTriangle />} title="Draft not found" action={<Link to="/drafts" className="btn primary">Go to drafts</Link>} />
   if (!defaultCycle && !existing)
-    return <Empty icon={<CalendarRange />} title="No open review cycle" action={<Link to="/cycles" className="btn primary">Create a review cycle</Link>}>Create and activate a review cycle first, then set up its goals here.</Empty>
+    return <Empty icon={<CalendarRange />} title="No open review cycle" action={<Link to="/cycles" className="btn primary">Create a review cycle</Link>} />
 
   const cycle = byId(state.cycles, draft.cycleId)
 
@@ -132,7 +132,6 @@ export default function Wizard({ draftId }) {
         <div>
           <div className="crumbs"><Wand2 size={13} /> Goal setup wizard · {cycle?.name}</div>
           <h1>{draft.goal.name || 'Set up a new organizational goal'}</h1>
-          <div className="sub">Create the goal and its KPIs once, then share them down to departments, teams and people — all in one lane.</div>
         </div>
         <div className="spacer" />
         {savedAt && <span className="badge green"><CheckCircle2 size={12} /> Draft saved {timeAgo(savedAt)}</span>}
@@ -146,25 +145,24 @@ export default function Wizard({ draftId }) {
             <div className="lane-fill" style={{ width: `${(step / (STEPS.length - 1)) * 100}%` }} />
           </div>
           {STEPS.map((s, i) => (
-            <button key={s.key} className={`lane-step ${stepState(i)}`} onClick={() => goTo(i)} title={`Go to step ${i + 1}: ${s.label}`}>
+            <button key={s.key} className={`lane-step ${stepState(i)}`} onClick={() => goTo(i)} aria-current={i === step ? 'step' : undefined} title={`Go to step ${i + 1}: ${s.label}`}>
               <div className="knob">
                 <div className="knob-inner">{stepState(i) === 'done' ? <CheckCircle2 size={20} /> : i + 1}</div>
               </div>
               <div className="t">{s.label}</div>
-              <div className="h">{s.hint}</div>
             </button>
           ))}
         </div>
       </div>
 
       <div className="mt-24">
-        {step === 0 && <StepGoal state={state} draft={draft} up={up} fieldErr={fieldErr} cycle={cycle} openCycles={openCycles} />}
+        {step === 0 && <StepGoal draft={draft} up={up} fieldErr={fieldErr} cycle={cycle} openCycles={openCycles} />}
         {step === 1 && <StepKpis draft={draft} up={up} fieldErr={fieldErr} />}
         {step >= 2 && step <= 4 && draft.kpis.length > 0 && (
           <KpiTabs state={state} draft={draft} active={kpi?.key} onPick={setActiveKpi} step={step} errors={attempted.has(step) || attempted.has('all') ? errsFor(step) : []} onExcel={() => setExcel(true)} />
         )}
         {step >= 2 && step <= 4 && draft.kpis.length === 0 && (
-          <Empty icon={<Target />} title="Add a KPI first" action={<button className="btn primary" onClick={() => goTo(1)}>Go to KPIs</button>}>Allocations are made per KPI.</Empty>
+          <Empty icon={<Target />} title="Add a KPI first" action={<button className="btn primary" onClick={() => goTo(1)}>Go to KPIs</button>} />
         )}
         {step === 2 && kpi && <StepDepts state={state} draft={draft} up={up} kpi={kpi} fieldErr={fieldErr} toast={toast} />}
         {step === 3 && kpi && <StepTeams state={state} draft={draft} up={up} kpi={kpi} fieldErr={fieldErr} goTo={goTo} />}
@@ -221,44 +219,42 @@ export default function Wizard({ draftId }) {
 // =====================================================================
 // Step 1 — Goal
 // =====================================================================
-function StepGoal({ state, draft, up, fieldErr, cycle, openCycles }) {
+function StepGoal({ draft, up, fieldErr, cycle, openCycles }) {
   const g = draft.goal
-  const others = state.goals.filter((x) => x.cycleId === draft.cycleId)
   return (
-    <div className="grid" style={{ gridTemplateColumns: 'minmax(0, 1.7fr) minmax(280px, 1fr)' }}>
-      <div className="card card-pad">
-        <h2>Goal details</h2>
-        <p className="muted small mt-4 mb-16">Goals exist only at organization level. Departments, teams and people contribute through KPIs.</p>
-        <div className="grid g-2">
-          <Field label="Review cycle" required hint={cycle ? `${fmtRange(cycle.startDate, cycle.endDate)} · ${cycle.status}` : ''}>
-            <select
-              className="select"
-              value={draft.cycleId}
-              onChange={(e) =>
-                up((d) => {
-                  const c = byId(state.cycles, e.target.value)
-                  d.cycleId = c.id
-                  if (!d.goal.startDate || d.goal.startDate < c.startDate || d.goal.startDate > c.endDate) d.goal.startDate = c.startDate
-                  if (!d.goal.endDate || d.goal.endDate > c.endDate || d.goal.endDate < c.startDate) d.goal.endDate = c.endDate
-                })
-              }
-            >
-              {openCycles.map((c) => (
-                <option key={c.id} value={c.id}>{c.name} ({c.status})</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Goal name" required field="goal.name" error={fieldErr('goal.name')}>
-            <input className={`input ${fieldErr('goal.name') ? 'invalid' : ''}`} placeholder="e.g. Increase Revenue" value={g.name} onChange={(e) => up((d) => { d.goal.name = e.target.value })} />
-          </Field>
-        </div>
-        <Field label="Description" style={{ marginTop: 14 }}>
-          <textarea className="textarea" placeholder="What does success look like?" value={g.description} onChange={(e) => up((d) => { d.goal.description = e.target.value })} />
+    <div className="card card-pad">
+      <h2 className="mb-16">Goal details</h2>
+      <div className="grid g-2">
+        <Field inside label="Review cycle" required>
+          <select
+            className="select"
+            value={draft.cycleId}
+            onChange={(e) =>
+              up((d) => {
+                const c = byId(openCycles, e.target.value)
+                d.cycleId = c.id
+                if (!d.goal.startDate || d.goal.startDate < c.startDate || d.goal.startDate > c.endDate) d.goal.startDate = c.startDate
+                if (!d.goal.endDate || d.goal.endDate > c.endDate || d.goal.endDate < c.startDate) d.goal.endDate = c.endDate
+              })
+            }
+          >
+            {openCycles.map((c) => (
+              <option key={c.id} value={c.id}>{c.name} ({c.status})</option>
+            ))}
+          </select>
         </Field>
+        <Field inside label="Goal name" required field="goal.name" error={fieldErr('goal.name')}>
+          <input className={`input ${fieldErr('goal.name') ? 'invalid' : ''}`} value={g.name} onChange={(e) => up((d) => { d.goal.name = e.target.value })} />
+        </Field>
+      </div>
+      <Field inside label="Description" style={{ marginTop: 14 }}>
+        <textarea className="textarea" value={g.description} onChange={(e) => up((d) => { d.goal.description = e.target.value })} />
+      </Field>
 
-        <div className="label mt-16 mb-8">Goal type <span className="muted" style={{ fontWeight: 400 }}>— every KPI of this goal, and every share below it, uses this type</span></div>
+      <div className="field-box mt-16" role="group" aria-labelledby="goal-type-label">
+        <span id="goal-type-label">Goal type</span>
         <div className="grid g-3">
-          {goalTypeOptions.map(({ type: k, Icon, label, desc, example }) => (
+          {goalTypeOptions.map(({ type: k, Icon, label }) => (
             <button key={k} type="button" aria-pressed={g.type === k} className={`option-card goal-type-card ${g.type === k ? 'on' : ''}`} onClick={() => up((d) => {
               d.goal.type = k
               // KPIs inherit the goal's type
@@ -275,58 +271,18 @@ function StepGoal({ state, draft, up, fieldErr, cycle, openCycles }) {
                 <span className="goal-type-indicator" aria-hidden="true" />
               </div>
               <div className="bold">{label}</div>
-              <div className="small muted mt-4">{desc}</div>
-              <div className="tiny mt-8" style={{ color: 'var(--blue-700)' }}>e.g. {example}</div>
             </button>
           ))}
         </div>
-
-        <div className="grid g-2 mt-16">
-          <Field label="Start date" required field="goal.startDate" error={fieldErr('goal.startDate')}>
-            <input type="date" className={`input ${fieldErr('goal.startDate') ? 'invalid' : ''}`} value={g.startDate} min={cycle?.startDate} max={cycle?.endDate} onChange={(e) => up((d) => { d.goal.startDate = e.target.value })} />
-          </Field>
-          <Field label="End date" required field="goal.endDate" error={fieldErr('goal.endDate')}>
-            <input type="date" className={`input ${fieldErr('goal.endDate') ? 'invalid' : ''}`} value={g.endDate} min={g.startDate || cycle?.startDate} max={cycle?.endDate} onChange={(e) => up((d) => { d.goal.endDate = e.target.value })} />
-          </Field>
-        </div>
       </div>
 
-      <div className="col">
-        <div className="card card-pad">
-          <h3>Tracked on its own</h3>
-          <p className="small muted mt-4 mb-12">Every goal counts as <b>100%</b> by itself. It is not weighted against the other goals in {cycle?.name}. Its KPIs share that 100% (you set each KPI's contribution in the next step).</p>
-          <div className="stack-bar" style={{ height: 14 }}>
-            <span style={{ width: '100%', background: 'var(--navy-800)' }} />
-          </div>
-          <div className="row small mt-8"><span className="spacer bold">{g.name || 'This goal'}</span><b>100%</b></div>
-          {others.length > 0 && (
-            <>
-              <div className="divider" style={{ margin: '12px 0 8px' }} />
-              <div className="tiny muted mb-8">Other goals in {cycle?.name}, each tracked separately</div>
-              <div className="col gap-6">
-                {others.map((o) => (
-                  <div key={o.id} className="row small"><span className="spacer">{o.name}</span><span className="muted">{goalKpis(state, o.id).length} KPI{goalKpis(state, o.id).length === 1 ? '' : 's'}</span></div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-        <div className="card card-pad" style={{ background: 'linear-gradient(160deg,#f4f8ff,#fff)' }}>
-          <h3 className="row gap-6"><Layers size={16} color="var(--blue-600)" /> How it cascades</h3>
-          <div className="col gap-6 mt-12 small">
-            {[
-              ['organization', Target, 'Organization goal + KPIs', 'Set once, here'],
-              ['department', Building2, 'Departments', 'Get a share of each KPI'],
-              ['team', UsersRound, 'Teams', "Split their department's share"],
-              ['individual', User, 'Individuals', 'Update results; everything rolls up'],
-            ].map(([lvl, Icon, t, s], i) => (
-              <div key={lvl} className="row" style={{ paddingLeft: i * 14 }}>
-                <span className={`lvl ${lvl}`}><Icon size={14} /></span>
-                <div><div className="semi">{t}</div><div className="tiny muted">{s}</div></div>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="grid g-2 mt-16">
+        <Field inside label="Start date" required field="goal.startDate" error={fieldErr('goal.startDate')}>
+          <input type="date" className={`input ${fieldErr('goal.startDate') ? 'invalid' : ''}`} value={g.startDate} min={cycle?.startDate} max={cycle?.endDate} onChange={(e) => up((d) => { d.goal.startDate = e.target.value })} />
+        </Field>
+        <Field inside label="End date" required field="goal.endDate" error={fieldErr('goal.endDate')}>
+          <input type="date" className={`input ${fieldErr('goal.endDate') ? 'invalid' : ''}`} value={g.endDate} min={g.startDate || cycle?.startDate} max={cycle?.endDate} onChange={(e) => up((d) => { d.goal.endDate = e.target.value })} />
+        </Field>
       </div>
     </div>
   )
@@ -358,7 +314,6 @@ function StepKpis({ draft, up, fieldErr }) {
       <div className="row mb-16" data-field="kpis">
         <div>
           <h2>KPIs for “{draft.goal.name || 'this goal'}”</h2>
-          <p className="muted small mt-4">Define the measurable targets at organization level. The goal is 100%; each KPI's contribution is its share of that 100%, and lower levels contribute to these KPIs.</p>
         </div>
         <div className="spacer" />
         <div data-field="kpis.weight" className="row gap-6">
@@ -372,9 +327,7 @@ function StepKpis({ draft, up, fieldErr }) {
 
       {draft.kpis.length === 0 && (
         <div className="card">
-          <Empty icon={<Target />} title="No KPIs yet" action={<button className="btn primary" onClick={addKpi}><Plus size={16} /> Add the first KPI</button>}>
-            A goal needs at least one KPI before it can run.
-          </Empty>
+          <Empty icon={<Target />} title="No KPIs yet" action={<button className="btn primary" onClick={addKpi}><Plus size={16} /> Add the first KPI</button>} />
         </div>
       )}
 
@@ -394,48 +347,43 @@ function StepKpis({ draft, up, fieldErr }) {
               </div>
               <div className="card-body">
                 <div className="grid" style={{ gridTemplateColumns: '2fr 1.4fr' }}>
-                  <Field label="KPI name" required field={f('name')} error={E('name')}>
-                    <input className={`input ${E('name') ? 'invalid' : ''}`} placeholder="e.g. Annual Revenue" value={k.name} onChange={(e) => set({ name: e.target.value })} />
+                  <Field inside label="KPI name" required field={f('name')} error={E('name')}>
+                    <input className={`input ${E('name') ? 'invalid' : ''}`} value={k.name} onChange={(e) => set({ name: e.target.value })} />
                   </Field>
-                  <Field label="Type" hint="Set by the goal (step 1); every level below uses it too.">
-                    <div className="inherited-type"><span className="lock">🔒</span> <b>{KPI_TYPES[draft.goal.type].label}</b> <span className="muted small">— from the goal “{draft.goal.name || 'this goal'}”</span></div>
+                  <Field inside label="Type">
+                    <input className="input" value={KPI_TYPES[draft.goal.type].label} disabled />
                   </Field>
                 </div>
-                <Field label="Description" style={{ marginTop: 12 }}>
-                  <input className="input" placeholder="Optional — what exactly is measured?" value={k.description} onChange={(e) => set({ description: e.target.value })} />
+                <Field inside label="Description" style={{ marginTop: 12 }}>
+                  <input className="input" value={k.description} onChange={(e) => set({ description: e.target.value })} />
                 </Field>
-                <div className="grid mt-12" style={{ gridTemplateColumns: 'repeat(6, minmax(0,1fr))' }}>
-                  <Field label="Unit" required field={f('unit')} error={E('unit')} style={{ gridColumn: 'span 1' }}>
+                <div className="wizard-kpi-fields mt-12">
+                  <Field inside label="Unit" required field={f('unit')} error={E('unit')}>
                     <select className={`select ${E('unit') ? 'invalid' : ''}`} value={k.unit} disabled={k.type === 'completion'} onChange={(e) => set({ unit: e.target.value })}>
-                      <option value="">Select…</option>
+                      <option value="">—</option>
                       {UNITS.map((u) => <option key={u}>{u}</option>)}
                     </select>
                   </Field>
                   {k.type === 'average' && (
-                    <Field label="Starting value" required field={f('startValue')} error={E('startValue')}>
-                      <NumInput value={k.startValue} invalid={!!E('startValue')} placeholder="e.g. 70" onChange={(v) => set({ startValue: v })} />
+                    <Field inside label="Starting value" required field={f('startValue')} error={E('startValue')}>
+                      <NumInput value={k.startValue} invalid={!!E('startValue')} onChange={(v) => set({ startValue: v })} />
                     </Field>
                   )}
-                  <Field label={k.type === 'completion' ? 'Target' : 'Organization target'} required field={f('target')} error={E('target')} style={{ gridColumn: k.type === 'average' ? 'span 1' : 'span 2' }} hint={k.type === 'sum' && Number(k.target) > 0 ? fmtValue(k.unit, Number(k.target), false) : k.type === 'completion' ? 'Fully achieved' : undefined}>
-                    {k.type === 'completion' ? <input className="input" value="100% (fully achieved)" disabled /> : <NumInput value={k.target} invalid={!!E('target')} placeholder="e.g. 1000000000" onChange={(v) => set({ target: v })} />}
+                  <Field inside label={k.type === 'completion' ? 'Target' : 'Organization target'} required field={f('target')} error={E('target')}>
+                    {k.type === 'completion' ? <input className="input" value="100%" disabled /> : <NumInput value={k.target} invalid={!!E('target')} onChange={(v) => set({ target: v })} />}
                   </Field>
-                  <Field label="Contribution to goal" required hint="Auto-split; editable">
+                  <Field inside label="Contribution to goal" required>
                     <div className="input-group">
                       <NumInput className="input pr" value={k.weight} onChange={(v) => set({ weight: v })} />
-                      <span className="addon">%</span>
+                      <span className="addon" aria-hidden="true">%</span>
                     </div>
                   </Field>
-                  <Field label="Start date" required field={f('startDate')} error={E('startDate')}>
+                  <Field inside label="Start date" required field={f('startDate')} error={E('startDate')}>
                     <input type="date" className={`input ${E('startDate') ? 'invalid' : ''}`} value={k.startDate} min={draft.goal.startDate} max={draft.goal.endDate} onChange={(e) => set({ startDate: e.target.value })} />
                   </Field>
-                  <Field label="End date" required field={f('endDate')} error={E('endDate')}>
+                  <Field inside label="End date" required field={f('endDate')} error={E('endDate')}>
                     <input type="date" className={`input ${E('endDate') ? 'invalid' : ''}`} value={k.endDate} min={k.startDate} max={draft.goal.endDate} onChange={(e) => set({ endDate: e.target.value })} />
                   </Field>
-                </div>
-                <div className="small muted mt-12">
-                  {k.type === 'sum' && 'Progress = (current − start) ÷ (target − start) × 100. Shares are split across departments, teams and people and added back up.'}
-                  {k.type === 'average' && 'Everyone carries the same benchmark; results are averaged on the way up.'}
-                  {k.type === 'completion' && `Updates are Fully achieved (100%), Partially achieved (presets) or Not achieved (0%, reason required).`}
                 </div>
               </div>
             </div>
@@ -562,17 +510,16 @@ function StepDepts({ state, draft, up, kpi, fieldErr, toast }) {
         <label className="check">
           <input type="checkbox" checked={copyOn} disabled={!rows.length} onChange={(e) => setCopyOn(e.target.checked)} />
           <span className="semi">Copy this setup to other departments</span>
-          <span className="small muted">— copies the share, period and team distribution method (not the people)</span>
         </label>
         {copyOn && (
           <div className="row wrap mt-12 gap-16">
-            <Field label="Copy from">
+            <Field inside label="Copy from">
               <select className="select sm" value={src} onChange={(e) => setSource(e.target.value)}>
                 {rows.map((r) => <option key={r.unitId} value={r.unitId}>{byId(state.departments, r.unitId).name}</option>)}
               </select>
             </Field>
-            <div className="field">
-              <label>To departments</label>
+            <div className="field-box" role="group" aria-labelledby="copy-departments-label">
+              <span id="copy-departments-label">To departments</span>
               <div className="row wrap">
                 {state.departments.filter((d) => d.id !== src).map((d) => (
                   <label key={d.id} className="check small">
@@ -601,9 +548,7 @@ function StepTeams({ state, draft, up, kpi, fieldErr, goTo }) {
   if (!drows.length)
     return (
       <div className="card">
-        <Empty icon={<Building2 />} title={`“${kpi.name}” isn't shared with any department yet`} action={<button className="btn primary" onClick={() => goTo(2)}>Go to Departments</button>}>
-          Allocate the KPI to departments first, or skip — the KPI can be tracked at organization level only.
-        </Empty>
+        <Empty icon={<Building2 />} title={`“${kpi.name}” isn't shared with any department yet`} action={<button className="btn primary" onClick={() => goTo(2)}>Go to Departments</button>} />
       </div>
     )
   return (
@@ -642,7 +587,6 @@ function StepTeams({ state, draft, up, kpi, fieldErr, goTo }) {
                 <SkipForward size={18} color="var(--muted)" />
                 <div className="spacer">
                   <div className="semi">{dept.name} has no teams — skipped.</div>
-                  <div className="small muted">Its members contribute directly to the department. You can assign them in the next step, or create a team now.</div>
                 </div>
                 <button className="btn secondary sm" onClick={() => setCreating(dept.id)}><Plus size={14} /> Create a team</button>
               </div>
@@ -676,22 +620,21 @@ export function CreateTeamModal({ deptId, onClose }) {
   return (
     <Modal
       title={`Create a team in ${dept.name}`}
-      sub="Members come from this department (synced from HR). Each person shows whether they are already in a team."
       icon={<UsersRound size={20} />}
       onClose={onClose}
       footer={<><button className="btn secondary" onClick={onClose}>Cancel</button><button className="btn primary" onClick={save}>Create team</button></>}
     >
       <div className="col gap-16">
-        <Field label="Team name" required error={nameErr || undefined}>
-          <input className={`input ${nameErr ? 'invalid' : ''}`} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Team D" autoFocus />
+        <Field inside label="Team name" required error={nameErr || undefined}>
+          <input className={`input ${nameErr ? 'invalid' : ''}`} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
         </Field>
-        <Field label="Team lead">
+        <Field inside label="Team lead">
           <select className="select" value={leadId} onChange={(e) => setLeadId(e.target.value)}>
             <option value="">— none —</option>
             {deptStaff.map((s) => <option key={s.id} value={s.id}>{s.name} · {s.title}</option>)}
           </select>
         </Field>
-        <div className="row wrap gap-8 small"><span className="badge gray">No team</span> {deptStaff.filter((s) => !s.teamId).length} people <span className="badge green">In a team</span> {deptStaff.filter((s) => s.teamId).length} people <span className="muted">(adding someone who is already in a team moves them to this one)</span></div>
+        <div className="row wrap gap-8 small"><span className="badge gray">No team</span> {deptStaff.filter((s) => !s.teamId).length} people <span className="badge green">In a team</span> {deptStaff.filter((s) => s.teamId).length} people</div>
         <StaffPicker state={state} candidates={deptStaff} selectedIds={members} teamFilter defaultOpen onToggle={(id) => setMembers((m) => (m.includes(id) ? m.filter((x) => x !== id) : [...m, id]))} title="Add members" />
         {members.length > 0 && (
           <div className="row wrap">
@@ -711,9 +654,7 @@ function StepPeople({ state, draft, up, kpi, fieldErr, goTo }) {
   if (!drows.length)
     return (
       <div className="card">
-        <Empty icon={<User />} title="Nothing to assign yet" action={<button className="btn primary" onClick={() => goTo(2)}>Go to Departments</button>}>
-          Share “{kpi.name}” with departments (and optionally teams) first.
-        </Empty>
+        <Empty icon={<User />} title="Nothing to assign yet" action={<button className="btn primary" onClick={() => goTo(2)}>Go to Departments</button>} />
       </div>
     )
 
@@ -766,7 +707,7 @@ function StepPeople({ state, draft, up, kpi, fieldErr, goTo }) {
           unitLabel="Person"
           otherUsed={otherUsed}
           otherLabel="Teams"
-          emptyText="No one selected. Use “Select people” to pick staff from HR."
+          emptyText="No one selected."
           onChange={(ng) => up((d) => { (d.people[kpi.key] ??= {})[key] = ng })}
           defaults={defaults}
           fieldId={`people.${kpi.key}.${key}`}
@@ -778,7 +719,6 @@ function StepPeople({ state, draft, up, kpi, fieldErr, goTo }) {
 
   return (
     <div className="col gap-20">
-      <Alert>People are picked from the staff list synced from HR — they are never typed in or created here. Search, tick several at once, then share the target.</Alert>
       {drows.map((dr) => {
         const dept = byId(state.departments, dr.unitId)
         const trows = draft.teams[kpi.key]?.[dept.id]?.rows || []
@@ -853,7 +793,6 @@ function StepReview({ state, draft, errors, warnings, cycle, onFix, onAdjust }) 
       <div className="hero">
         <div className="label">Review · {cycle?.name}</div>
         <h1>{g.name || 'Untitled goal'}</h1>
-        <p style={{ color: '#e6efff', marginTop: 6, maxWidth: 680 }}>This is everything you have set up. Check each part and use <b>Adjust</b> to change it — you come straight back here afterwards.</p>
         <div className="row wrap gap-16 mt-16">
           <div className="hero-stat"><div className="v">{draft.kpis.length}</div><div className="k">KPIs</div></div>
           <div className="hero-stat"><div className="v">{counts.depts}</div><div className="k">Department allocations</div></div>
@@ -948,7 +887,6 @@ function StepReview({ state, draft, errors, warnings, cycle, onFix, onAdjust }) 
             <span className="lvl organization"><Target size={14} /></span>
             <div>
               <h3>Who contributes to “{k.name || 'Untitled KPI'}”</h3>
-              <div className="tiny muted">Department → team → person, with each one's share, target and period</div>
             </div>
             <div className="spacer" />
             <AdjustBtn onClick={() => onAdjust(2, k.key)} label="Departments" />
@@ -959,9 +897,6 @@ function StepReview({ state, draft, errors, warnings, cycle, onFix, onAdjust }) 
         </div>
       ))}
 
-      {errors.length === 0 && (
-        <Alert tone="success">Everything checks out. Click <b>Save goal</b> to create the goal, its KPIs and every allocation in one go. It will be <b>Ready</b> — start it running from the goal page when its start date arrives.</Alert>
-      )}
     </div>
   )
 }

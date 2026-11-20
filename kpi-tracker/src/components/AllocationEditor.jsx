@@ -278,7 +278,6 @@ export function StaffPicker({ state, candidates, selectedIds, onToggle, disabled
         <button className="btn soft sm" onClick={() => setOpen(!open)}>
           <Users size={14} /> {title} ({selectedIds.length})
         </button>
-        {selectedIds.length === 0 && <span className="small muted">Pick from the staff list synced from HR.</span>}
       </div>
       {open && (
         <div className="picker mt-8">

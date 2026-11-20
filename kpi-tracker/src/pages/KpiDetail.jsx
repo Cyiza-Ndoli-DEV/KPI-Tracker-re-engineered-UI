@@ -171,7 +171,7 @@ export default function KpiDetail({ id, query }) {
       </div>
 
       {chooseGroup && (
-        <Modal title="Add member — choose the group" sub="Pick the team or department the new person will contribute to." icon={<UserPlus size={20} />} onClose={() => setChooseGroup(false)}>
+        <Modal title="Add member — choose the group" icon={<UserPlus size={20} />} onClose={() => setChooseGroup(false)}>
           <div className="col gap-6">
             {groups.map((g) => {
               const parent = g.parentId && byId(state.allocations, g.parentId)
@@ -386,9 +386,8 @@ export function RequestEditModal({ update, onClose }) {
       onClose={onClose}
       footer={<><button className="btn secondary" onClick={onClose}>Cancel</button><button className="btn primary" onClick={save}><Send size={15} /> Send request</button></>}
     >
-      <Alert>This update is past its edit window. The admin can extend the window for you on this KPI, and will revert it after your change. Every change is recorded in the audit log.</Alert>
       <Field label="Reason" required error={tried && !reason.trim() ? 'Please explain what needs correcting.' : undefined} style={{ marginTop: 14 }}>
-        <textarea className="textarea" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Typo: the figure should be UGX 54M" autoFocus />
+        <textarea className="textarea" value={reason} onChange={(e) => setReason(e.target.value)} autoFocus />
       </Field>
     </Modal>
   )

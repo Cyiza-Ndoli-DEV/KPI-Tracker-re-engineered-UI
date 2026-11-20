@@ -194,7 +194,7 @@ export function UpdateModal({ alloc, update, onClose }) {
         <div className="card card-pad" style={{ padding: 12 }}><div className="tiny muted">Progress after save</div><div className="bold" style={{ color: 'var(--blue-700)' }}>{preview === null ? '—' : fmtPct(preview, 1)}</div></div>
       </div>
       <div className="col gap-16">
-        <Field label="Result date" required error={tried ? errs.date : undefined} hint="Any date up to today — there is no weekly or monthly schedule.">
+        <Field label="Result date" required error={tried ? errs.date : undefined}>
           <input type="date" className={`input ${tried && errs.date ? 'invalid' : ''}`} value={date} min={minDate} max={maxDate} onChange={(e) => setDate(e.target.value)} />
         </Field>
         {kpi.type === 'completion' ? (
@@ -202,25 +202,24 @@ export function UpdateModal({ alloc, update, onClose }) {
             <div className="label">Status <span className="req" style={{ color: 'var(--red)' }}>*</span></div>
             <div className="grid g-3">
               {[
-                ['full', 'Fully achieved', 'Recorded as 100%', CheckCircle2, 'var(--green)'],
-                ['partial', 'Partially achieved', 'Choose how much %', CircleDashed, 'var(--amber)'],
-                ['none', 'Not achieved', '0% · reason required', XCircle, 'var(--red)'],
-              ].map(([k, t, s, I, c]) => (
+                ['full', 'Fully achieved', CheckCircle2, 'var(--green)'],
+                ['partial', 'Partially achieved', CircleDashed, 'var(--amber)'],
+                ['none', 'Not achieved', XCircle, 'var(--red)'],
+              ].map(([k, t, I, c]) => (
                 <button key={k} type="button" className={`option-card ${completion === k ? 'on' : ''}`} onClick={() => setCompletion(k)}>
                   <I size={22} color={c} />
                   <div className="bold mt-8">{t}</div>
-                  <div className="tiny muted">{s}</div>
                 </button>
               ))}
             </div>
             {tried && errs.value && <div className="err small" style={{ color: 'var(--red)' }}>{errs.value}</div>}
             {completion === 'partial' && (
-              <Field label="How much is done?" hint="Pick a preset, or Other to enter the exact percentage." error={tried ? errs.partial : undefined}>
+              <Field label="How much is done?" error={tried ? errs.partial : undefined}>
                 <div className="row wrap gap-8">
                   <Seg value={partial === 'other' ? 'other' : Number(partial)} onChange={setPartial} options={[...presets.map((p) => ({ value: p, label: `${p}%` })), { value: 'other', label: 'Other %' }]} />
                   {partial === 'other' && (
                     <div className="input-group" style={{ width: 120 }}>
-                      <NumInput className={`input pr ${tried && errs.partial ? 'invalid' : ''}`} value={otherPct} min={1} max={99} placeholder="e.g. 60" onChange={setOtherPct} />
+                      <NumInput className={`input pr ${tried && errs.partial ? 'invalid' : ''}`} value={otherPct} min={1} max={99} onChange={setOtherPct} />
                       <span className="addon">%</span>
                     </div>
                   )}
@@ -233,7 +232,6 @@ export function UpdateModal({ alloc, update, onClose }) {
             label={kpi.type === 'sum' ? `Achieved since your last update (${kpi.unit})` : `Current value (${kpi.unit})`}
             required
             error={tried ? errs.value : undefined}
-            hint={kpi.type === 'sum' ? `Enter only the new amount — it is added to what you already achieved. Your target is ${fmtValue(kpi.unit, target, false)}.` : `Benchmark ${kpi.startValue} → ${kpi.target}${kpi.unit === '%' ? '%' : ''}.`}
           >
             <NumInput value={value} invalid={tried && !!errs.value} min={0} onChange={setValue} placeholder={isSumKpi ? '0' : last ? String(last.value) : '0'} />
             {isSumKpi && value !== '' && (
@@ -249,14 +247,12 @@ export function UpdateModal({ alloc, update, onClose }) {
           label="Comment"
           required={completion === 'none'}
           error={tried ? errs.comment : undefined}
-          hint={`${completion === 'none' ? 'Required when not achieved.' : 'Optional.'} Share how it went: what helped, any blockers, or what you expect next. It is kept with this result and in the audit log.`}
         >
           <textarea
             className={`textarea ${tried && errs.comment ? 'invalid' : ''}`}
             value={comment}
             maxLength={500}
             onChange={(e) => setComment(e.target.value)}
-            placeholder={completion === 'none' ? 'Why was it not achieved? What will change?' : 'e.g. Two big clients paid early; I expect a slower October because of the holidays.'}
           />
           <div className="tiny muted right">{comment.length}/500</div>
         </Field>
@@ -377,7 +373,7 @@ export function AddMemberModal({ parent, onClose }) {
       {step === 0 && (
         <div className="grid" style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.15fr)', alignItems: 'start' }}>
         <div className="col gap-16">
-          <Field label="Pick the person from the staff list" required hint="People from this department are listed first. Tick the box to add someone from another team or department; they then contribute to this group.">
+          <Field label="Pick the person from the staff list" required>
             <div className="picker">
               <div style={{ padding: 8, borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
                 <div className="input-group">
@@ -402,7 +398,7 @@ export function AddMemberModal({ parent, onClose }) {
               </div>
             </div>
           </Field>
-          <Field label="Joining date for this KPI" required hint="The new member's target starts from this date.">
+          <Field label="Joining date for this KPI" required>
             <input type="date" className="input" style={{ maxWidth: 220 }} value={joinedDate} min={period.startDate} max={period.endDate} onChange={(e) => setJoinedDate(e.target.value)} />
           </Field>
         </div>
@@ -417,7 +413,6 @@ export function AddMemberModal({ parent, onClose }) {
             <button type="button" className={`option-card ${method === 'equal' ? 'on' : ''}`} onClick={() => setMethod('equal')}>
               <div className="ic"><Equal size={16} /></div>
               <div className="bold">Equal</div>
-              <div className="small muted mt-4">Re-split the group's target equally across everyone, including {person?.name}.</div>
             </button>
             <button type="button" className={`option-card ${method === 'custom' ? 'on' : ''}`} onClick={() => setMethod('custom')}>
               <div className="ic"><SlidersHorizontal size={16} /></div>
@@ -475,7 +470,6 @@ export function AddMemberModal({ parent, onClose }) {
 
       {steps[step] === 'Preview' && (
         <div className="col gap-16">
-          <Alert>What existing members have already achieved never changes — only their remaining targets move. {person?.name}'s target starts on <b>{fmtDate(joinedDate)}</b>.</Alert>
           <div className="card scroll-x">
             <table className="table compact">
               <thead>
@@ -659,26 +653,23 @@ export function RestartModal({ kpi, period, goal, initialMode = 'restart', onClo
       <div className="grid g-2 mb-16">
         <button type="button" className={`option-card ${mode === 'restart' ? 'on' : ''}`} onClick={() => switchMode('restart')}>
           <div className="bold">Restart (end of KPI period)</div>
-          <div className="small muted mt-4">Close this period, keep its results, and open a new one with empty current values and the same setup.</div>
         </button>
         <button type="button" className={`option-card ${mode === 'newTarget' ? 'on' : ''}`} onClick={() => switchMode('newTarget')} disabled={kpi.type === 'completion'}>
           <div className="bold">Restart with a new target</div>
-          <div className="small muted mt-4">Mid-period change: the current period is closed and calculated, then a new period starts with the new target. Allocation percentages carry over.</div>
         </button>
       </div>
       <div className="grid g-4">
         <Field label="Close current period on"><input type="date" className="input" value={closeOn} min={period.startDate} max={period.endDate} onChange={(e) => setCloseOn(e.target.value)} /></Field>
         <Field label="New period starts"><input type="date" className="input" value={newStart} max={goal.endDate} onChange={(e) => setNewStart(e.target.value)} /></Field>
-        <Field label="New period ends" hint={`Max ${fmtDate(goal.endDate)} (goal end)`}><input type="date" className="input" value={newEnd} max={goal.endDate} onChange={(e) => setNewEnd(e.target.value)} /></Field>
+        <Field label="New period ends"><input type="date" className="input" value={newEnd} max={goal.endDate} onChange={(e) => setNewEnd(e.target.value)} /></Field>
         {mode === 'newTarget' ? (
-          <Field label={`New target (${kpi.unit})`} hint={kpi.type === 'sum' ? fmtValue(kpi.unit, Number(newTarget) || 0, false) : undefined}>
+          <Field label={`New target (${kpi.unit})`}>
             <NumInput value={newTarget} onChange={setNewTarget} />
           </Field>
         ) : (
           <Field label="Target"><input className="input" disabled value={kpi.type === 'completion' ? 'Fully achieved' : valueLabel(kpi, period.target)} /></Field>
         )}
       </div>
-      <Alert style={{ marginTop: 16 }}>Nothing is deleted. Period {period.index}'s results stay in the period history. The same departments, teams and people carry over with the same percentages{mode === 'newTarget' ? ' — their amounts are recalculated from the new target' : ''}.</Alert>
       {tried && errs.map((e) => <Alert key={e} tone="error" style={{ marginTop: 10 }}>{e}</Alert>)}
     </Modal>
   )
@@ -702,12 +693,11 @@ export function ReuseModal({ goal, onClose }) {
     <Modal
       icon={<RotateCcw size={20} />}
       title={`Reuse “${goal.name}”`}
-      sub="Start from this goal: its KPIs and all allocations are copied into a new draft in the wizard."
       onClose={onClose}
       footer={<><button className="btn secondary" onClick={onClose}>Cancel</button><button className="btn primary" disabled={!cycleId} onClick={go}>Copy into wizard</button></>}
     >
       {open.length ? (
-        <Field label="Copy into review cycle" hint="Dates are moved into the chosen cycle. Results are never copied.">
+        <Field label="Copy into review cycle">
           <select className="select" value={cycleId} onChange={(e) => setCycleId(e.target.value)}>
             {open.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.status})</option>)}
           </select>

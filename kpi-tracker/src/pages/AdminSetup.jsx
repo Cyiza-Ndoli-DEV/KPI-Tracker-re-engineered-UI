@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { Check, Plus, X, SlidersHorizontal, Award, Scale, Clock, Users, Search } from 'lucide-react'
 import { useStore } from '../store'
-import { Field, NumInput, Badge, Alert, Avatar, useFeedback, ScoreDot } from '../components/ui'
+import { Field, NumInput, Badge, Avatar, useFeedback, ScoreDot } from '../components/ui'
 import { byId, DEFAULT_BANDS, personScore, band } from '../lib/calc'
 import { fmtPct, round } from '../lib/utils'
 
@@ -56,7 +56,7 @@ export function SetupPanel() {
     <div className="col gap-16">
       <div className="grid g-2" style={{ alignItems: 'start' }}>
         <div className="card">
-          <div className="card-head"><Award size={18} color="var(--blue-600)" /><h3>Performance bands</h3><span className="small muted">labels and the score each one starts at</span></div>
+          <div className="card-head"><Award size={18} color="var(--blue-600)" /><h3>Performance bands</h3></div>
           <div className="card-body col gap-10">
             <table className="table compact">
               <thead><tr><th>Label</th><th className="right" style={{ width: 130 }}>From score</th><th>Colour</th><th /></tr></thead>
@@ -94,9 +94,8 @@ export function SetupPanel() {
               <div className="formula small">
                 <div><b>Member</b> = average of their own KPIs × {scoring.kpiWeight}% + Org Fit × {scoring.orgFitWeight}%</div>
                 <div className="mt-4"><b>Team lead</b> = average of their team members' KPI scores × {scoring.kpiWeight}% + their own Org Fit × {scoring.orgFitWeight}%</div>
-                <div className="tiny muted mt-4">Org Fit scores come from supervisor and peer ratings. Until a person is rated, the KPI part alone is shown.</div>
               </div>
-              <Field label="“Available for PIP” when the final score is below" hint="Listed in Reports for a performance improvement plan.">
+              <Field label="“Available for PIP” when the final score is below">
                 <div className="input-group" style={{ width: 140 }}><NumInput className="input pr" value={pipBelow} onChange={setPipBelow} /><span className="addon">%</span></div>
               </Field>
             </div>
@@ -104,7 +103,7 @@ export function SetupPanel() {
           <div className="card">
             <div className="card-head"><SlidersHorizontal size={18} color="var(--blue-600)" /><h3>General</h3></div>
             <div className="card-body">
-              <Field label="Organization name" hint="Shown at the top of every KPI hierarchy."><input className="input" value={orgName} onChange={(e) => setOrgName(e.target.value)} /></Field>
+              <Field label="Organization name"><input className="input" value={orgName} onChange={(e) => setOrgName(e.target.value)} /></Field>
             </div>
           </div>
         </div>
@@ -113,13 +112,13 @@ export function SetupPanel() {
       <div className="card">
         <div className="card-head"><Clock size={18} color="var(--blue-600)" /><h3>Update rules</h3></div>
         <div className="card-body grid g-3">
-          <Field label="Edit window" hint="A submitted result can be edited for this many days, then it locks (Request edit).">
+          <Field label="Edit window">
             <div className="input-group" style={{ maxWidth: 170 }}><NumInput className="input pr" value={days} min={1} onChange={setDays} /><span className="addon">days</span></div>
           </Field>
-          <Field label="“Has not updated” after" hint="People with no result for this long are flagged in Reports.">
+          <Field label="“Has not updated” after">
             <div className="input-group" style={{ maxWidth: 170 }}><NumInput className="input pr" value={staleDays} min={1} onChange={setStaleDays} /><span className="addon">days</span></div>
           </Field>
-          <Field label="Partial-completion presets" hint="Offered for “Partially achieved”; people can also type another %.">
+          <Field label="Partial-completion presets">
             <div className="row wrap gap-6">
               {presets.map((p) => <span key={p} className="chip">{p}%<button onClick={() => setPresets(presets.filter((x) => x !== p))} aria-label={`Remove ${p}%`}><X size={12} /></button></span>)}
               <div className="input-group" style={{ width: 96 }}><NumInput className="input sm pr" value={newPreset} onChange={setNewPreset} placeholder="90" /><span className="addon">%</span></div>
@@ -148,7 +147,6 @@ export function OrgFitPanel() {
     <div className="card">
       <div className="card-head">
         <Users size={18} color="var(--blue-600)" /><h3>Organizational Fit scores · {cycle.name}</h3>
-        <span className="small muted">read-only · calculated from supervisor and peer ratings · counts for {w.orgFitWeight}% of the final score</span>
         <div className="spacer" />
         <div className="input-group" style={{ width: 200 }}><Search size={14} style={{ position: 'absolute', left: 10, color: 'var(--muted)' }} /><input className="input sm" style={{ paddingLeft: 30 }} placeholder="Search person" value={q} onChange={(e) => setQ(e.target.value)} /></div>
       </div>
@@ -172,7 +170,6 @@ export function OrgFitPanel() {
           </tbody>
         </table>
       </div>
-      <Alert style={{ margin: 16 }}>Org Fit scores are not entered here: they come from the supervisor and peer ratings of the professional attributes. Final score = KPI score × {w.kpiWeight}% + Org Fit score × {w.orgFitWeight}%.</Alert>
     </div>
   )
 }

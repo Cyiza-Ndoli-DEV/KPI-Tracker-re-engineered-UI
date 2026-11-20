@@ -174,16 +174,25 @@ export function Person({ staff, sub, size = 'sm' }) {
   )
 }
 
-export function Field({ label, required, hint, error, children, field, style }) {
+export function Field({ label, required, hint, error, children, field, style, inside = false }) {
   return (
     <div className="field" data-field={field} style={style}>
-      {label && (
-        <label>
-          {label}
-          {required && <span className="req">*</span>}
+      {inside ? (
+        <label className={`field-box ${error ? 'invalid-box' : ''}`}>
+          <span>{label}{required && <span className="req" aria-hidden="true">*</span>}</span>
+          {children}
         </label>
+      ) : (
+        <>
+          {label && (
+            <label>
+              {label}
+              {required && <span className="req">*</span>}
+            </label>
+          )}
+          {children}
+        </>
       )}
-      {children}
       {error ? (
         <span className="err">
           <AlertCircle size={12} /> {error}

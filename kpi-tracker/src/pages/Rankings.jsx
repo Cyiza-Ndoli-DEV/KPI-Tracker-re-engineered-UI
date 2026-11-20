@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Trophy, Info } from 'lucide-react'
+import { Trophy } from 'lucide-react'
 import { useStore } from '../store'
 import { Field, Avatar, Badge, Empty, PctBar, ScoreTile } from '../components/ui'
 import { byId, cycleGoals, goalKpis, unitAllocations, personScore, band } from '../lib/calc'
@@ -36,7 +36,7 @@ export default function Rankings({ embedded = false, deptFilter }) {
         <div className="page-head" style={{ marginBottom: 0 }}>
           <div>
             <h1>Rankings</h1>
-            <div className="sub">{cycle.name} · staff ranked by final score (KPI score + Org Fit score).</div>
+            <div className="sub">{cycle.name}</div>
           </div>
         </div>
       )}
@@ -110,7 +110,6 @@ export default function Rankings({ embedded = false, deptFilter }) {
               </tbody>
             </table>
           </div>
-          <div className="small muted row gap-6"><Info size={14} /> KPI score = the average of the person's KPI achievements (a team lead: the average of their team members' KPI scores). Org Fit score comes from supervisor and peer ratings.</div>
         </>
       )}
     </div>

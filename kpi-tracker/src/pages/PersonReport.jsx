@@ -140,7 +140,7 @@ export default function PersonReport({ id }) {
       )}
 
       <div className="card">
-        <div className="card-head"><ListChecks size={18} color="var(--blue-600)" /><h3>Performance records</h3><span className="small muted">every result entered, newest first</span></div>
+        <div className="card-head"><ListChecks size={18} color="var(--blue-600)" /><h3>Performance records</h3></div>
         {rep.records.length === 0 ? <Empty title="No results recorded yet" /> : (
           <div className="scroll-x">
             <table className="table compact">

@@ -475,7 +475,7 @@ function Compliance({ data, asOf, cycle, dept }) {
       </div>
 
       <div className="card">
-        <div className="card-head wrap"><LineIcon size={18} color="var(--blue-600)" /><h3>KPI performance over time</h3><span className="small muted">pick a KPI, then any level and owner</span></div>
+        <div className="card-head wrap"><LineIcon size={18} color="var(--blue-600)" /><h3>KPI performance over time</h3></div>
         <div className="row wrap gap-12" style={{ padding: '12px 20px 0' }}>
           <label className="filter-field">KPI<select className="select" value={perfKpi} onChange={(e) => { setPerfKpi(e.target.value); setPerfOwner('') }}>{kpis.map((k) => <option key={k.id} value={k.id}>{k.name}</option>)}</select></label>
           <label className="filter-field">Level<select className="select" value={perfLevel} onChange={(e) => { setPerfLevel(e.target.value); setPerfOwner('') }}>{['organization', 'department', 'team', 'individual'].filter((l) => l === 'organization' || kpiNodesOf.some((n) => n.level === l)).map((l) => <option key={l} value={l}>{LEVEL_NAME[l]}</option>)}</select></label>
@@ -488,7 +488,7 @@ function Compliance({ data, asOf, cycle, dept }) {
       </div>
 
       <div className="card">
-        <div className="card-head wrap"><BarChart3 size={18} color="var(--blue-600)" /><h3>Results recorded over time</h3><span className="small muted">each point = results entered on that {by === 'day' ? 'date' : 'week'}</span></div>
+        <div className="card-head wrap"><BarChart3 size={18} color="var(--blue-600)" /><h3>Results recorded over time</h3></div>
         <div className="row wrap gap-12" style={{ padding: '12px 20px 0' }}>
           <label className="filter-field">Department<select className="select" value={uDept} onChange={(e) => setUDept(e.target.value)}><option value="all">All</option>{state.departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
           <label className="filter-field">KPI<select className="select" value={uKpi} onChange={(e) => setUKpi(e.target.value)}><option value="all">All KPIs</option>{kpis.map((k) => <option key={k.id} value={k.id}>{k.name}</option>)}</select></label>

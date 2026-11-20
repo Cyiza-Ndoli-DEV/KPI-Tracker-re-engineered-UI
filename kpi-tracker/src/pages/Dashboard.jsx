@@ -122,7 +122,6 @@ function Trend({ points, format = percent, target, currency = false }) {
         fmtValue(kpi.type === 'completion' ? '%' : kpi.unit, stats.target, false),
         stats.current == null ? 'No result' : fmtValue(kpi.type === 'completion' ? '%' : kpi.unit, stats.current, false),
       ])} />}
-      <p className="pd-chart-note">{currency ? 'Monthly targets are prorated by days in the KPI period.' : 'Sum targets are prorated by days. Average and Completion use their configured benchmarks and the results recorded that month.'}</p>
     </div>
   </div>
 }

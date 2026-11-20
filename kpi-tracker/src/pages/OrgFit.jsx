@@ -11,7 +11,6 @@ export default function OrgFit() {
       <div className="page-head" style={{ marginBottom: 0 }}>
         <div>
           <h1>Org Fit scores</h1>
-          <div className="sub">Organizational Fit for everyone in {cycle.name}, from supervisor and peer ratings. It counts towards each person's final score.</div>
         </div>
       </div>
       <OrgFitPanel />

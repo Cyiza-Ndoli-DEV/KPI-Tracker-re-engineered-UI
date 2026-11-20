@@ -22,14 +22,13 @@ export default function Drafts() {
       <div className="page-head">
         <div>
           <h1>Drafts</h1>
-          <div className="sub">Goals that are part-way through the setup wizard. Each one reopens at the step where you stopped.</div>
         </div>
         <div className="spacer" />
         <Link to="/wizard" className="btn primary"><Wand2 size={16} /> New goal</Link>
       </div>
       <div className="card">
         {drafts.length === 0 ? (
-          <Empty icon={<FileClock />} title="No drafts">Anything you start in the wizard is saved here automatically.</Empty>
+          <Empty icon={<FileClock />} title="No drafts" />
         ) : (
           <table className="table">
             <thead><tr><th>Goal</th><th>Cycle</th><th>Where you stopped</th><th className="right">KPIs</th><th>Last saved</th><th /></tr></thead>

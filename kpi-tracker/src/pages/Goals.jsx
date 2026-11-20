@@ -15,7 +15,6 @@ export default function Goals() {
       <div className="page-head">
         <div>
           <h1>Goals</h1>
-          <div className="sub">Organization goals in {cycle.name}. Each goal is tracked on its own (100%). Expand a goal for its KPIs, and a KPI for who contributes.</div>
         </div>
         <div className="spacer" />
         {isAdmin && drafts.length > 0 && <Link to="/drafts" className="btn secondary"><FileClock size={16} /> {drafts.length} draft{drafts.length > 1 ? 's' : ''}</Link>}
@@ -23,7 +22,7 @@ export default function Goals() {
       </div>
       <div className="card" style={{ overflowX: 'auto' }}>
         {goals.length === 0 ? (
-          <Empty icon={<Target />} title="No goals in this cycle">Use the setup wizard to create the first one.</Empty>
+          <Empty icon={<Target />} title="No goals in this cycle" />
         ) : (
           <GoalsTable goals={goals} />
         )}

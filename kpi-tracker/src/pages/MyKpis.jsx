@@ -16,7 +16,6 @@ export default function MyKpis() {
   const score = ps.final
   const [updating, setUpdating] = useState(null)
   const [requesting, setRequesting] = useState(null)
-  const isAdmin = state.role === 'admin'
 
   const led = [
     ...state.departments.filter((d) => d.headId === user.id).flatMap((d) => unitAllocations(state, 'department', d.id, cycle.id)),
@@ -33,7 +32,6 @@ export default function MyKpis() {
         <div style={{ flex: 1 }}>
           <h1>My KPIs</h1>
           <div className="muted">{user.name} · {user.title}{user.departmentId ? ` · ${byId(state.departments, user.departmentId).name}` : ''}{user.teamId ? ` · ${byId(state.teams, user.teamId).name}` : ''}</div>
-          <div className="small muted mt-4">No weekly or monthly schedule — update whenever you have a new result. Progress rolls up to your team, department and {state.settings.orgName} immediately.</div>
         </div>
         {score !== null && (
           <div className="row gap-12">
@@ -48,9 +46,7 @@ export default function MyKpis() {
 
       {items.length === 0 ? (
         <div className="card">
-          <Empty icon={<UserCheck />} title="No KPIs allocated to you in this cycle">
-            {isAdmin ? 'Switch View as to an Employee (Sarah Nakato or Ronald Kintu) or the Team Lead to see this view with data.' : 'When a KPI is shared with you, it appears here with an Update button.'}
-          </Empty>
+          <Empty icon={<UserCheck />} title="No KPIs allocated to you in this cycle" />
         </div>
       ) : (
         <div className="grid g-2">
@@ -98,7 +94,7 @@ export default function MyKpis() {
 
       {led.length > 0 && (
         <div className="card">
-          <div className="card-head"><h3>Units you lead</h3><span className="small muted">progress is calculated from your members' results</span></div>
+          <div className="card-head"><h3>Units you lead</h3></div>
           <table className="table">
             <thead><tr><th>Unit</th><th>KPI</th><th className="right">Achieved / target</th><th style={{ width: 90 }}>Progress</th><th /></tr></thead>
             <tbody>

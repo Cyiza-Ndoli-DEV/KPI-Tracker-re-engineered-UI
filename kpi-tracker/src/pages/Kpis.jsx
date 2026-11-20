@@ -74,7 +74,6 @@ export default function Kpis() {
       <div className="page-head">
         <div>
           <h1>KPIs</h1>
-          <div className="sub">Every KPI in {cycle.name} and every share of it, from the organization down to each person.</div>
         </div>
         <div className="spacer" />
         {isAdmin && cycle.status !== 'ended' && <Link to="/wizard" className="btn primary"><Wand2 size={16} /> Set up a goal with KPIs</Link>}
@@ -217,9 +216,6 @@ export default function Kpis() {
             </tbody>
           </table>
         )}
-      </div>
-      <div className="small muted mt-12">
-        The organization KPI is set once on the goal; departments, teams and people hold shares of it. Progress always rolls up from the people at the bottom.
       </div>
     </div>
   )
