@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { PencilLine, ArrowLeft, ArrowRight, Save, SkipForward, Plus, Trash2, Building2, UsersRound, User, Target, FileSpreadsheet, CheckCircle2, AlertTriangle, AlertCircle, Wand2, Play, Copy, CalendarRange, Sparkles, Calculator, ChartNoAxesColumn, Flag } from 'lucide-react'
+import { PencilLine, ArrowLeft, ArrowRight, Save, SkipForward, Plus, Trash2, Building2, UsersRound, User, Target, FileSpreadsheet, CheckCircle2, AlertTriangle, AlertCircle, Wand2, Play, Copy, CalendarRange, Sparkles } from 'lucide-react'
 import { useStore, currentUserId } from '../store'
 import { Field, NumInput, Seg, Badge, Alert, Empty, Modal, Link, navigate, useFeedback } from '../components/ui'
 import AllocationEditor, { StaffPicker, equalize, defaultMethod } from '../components/AllocationEditor'
@@ -7,12 +7,6 @@ import ExcelUpload from '../components/ExcelUpload'
 import { STEPS, emptyDraft, newKpi, validateDraft, kpiTarget, deptTarget, teamTarget, groupRows, pctTotal, teamsPctOfDept, directPctOfDept, isSum } from '../lib/draft'
 import { KPI_TYPES, byId } from '../lib/calc'
 import { UNITS, fmtValue, fmtRange, round, sum, timeAgo, todayISO, fmtDate } from '../lib/utils'
-
-const goalTypeOptions = [
-  { type: 'sum', Icon: Calculator },
-  { type: 'average', Icon: ChartNoAxesColumn },
-  { type: 'completion', Icon: Flag },
-].map(({ type, Icon }) => ({ type, Icon, label: KPI_TYPES[type].label }))
 
 export default function Wizard({ draftId }) {
   const { state, saveDraft, commitDraft, startGoal } = useStore()
@@ -253,25 +247,21 @@ function StepGoal({ draft, up, fieldErr, cycle, openCycles }) {
 
       <div className="field-box mt-16" role="group" aria-labelledby="goal-type-label">
         <span id="goal-type-label">Goal type</span>
-        <div className="grid g-3">
-          {goalTypeOptions.map(({ type: k, Icon, label }) => (
-            <button key={k} type="button" aria-pressed={g.type === k} className={`option-card goal-type-card ${g.type === k ? 'on' : ''}`} onClick={() => up((d) => {
-              d.goal.type = k
-              // KPIs inherit the goal's type
-              d.kpis.forEach((x) => {
-                if (x.type === k) return
-                x.type = k
-                x.unit = k === 'completion' ? '%' : k === 'average' ? (x.unit === 'UGX' ? '%' : x.unit) : x.unit === '%' ? 'UGX' : x.unit
-                x.target = k === 'completion' ? 100 : ''
-                x.startValue = k === 'average' ? '' : 0
-              })
-            })}>
-              <div className="goal-type-card-header">
-                <div className="ic"><Icon size={20} aria-hidden="true" /></div>
-                <span className="goal-type-indicator" aria-hidden="true" />
-              </div>
-              <div className="bold">{label}</div>
-            </button>
+        <div className="goal-type-options">
+          {Object.entries(KPI_TYPES).map(([type, { label }]) => (
+            <label key={type} className="goal-type-option">
+              <input type="radio" name="goal-type" value={type} checked={g.type === type} onChange={() => up((d) => {
+                d.goal.type = type
+                d.kpis.forEach((kpi) => {
+                  if (kpi.type === type) return
+                  kpi.type = type
+                  kpi.unit = type === 'completion' ? '%' : type === 'average' ? (kpi.unit === 'UGX' ? '%' : kpi.unit) : kpi.unit === '%' ? 'UGX' : kpi.unit
+                  kpi.target = type === 'completion' ? 100 : ''
+                  kpi.startValue = type === 'average' ? '' : 0
+                })
+              })} />
+              {label}
+            </label>
           ))}
         </div>
       </div>
