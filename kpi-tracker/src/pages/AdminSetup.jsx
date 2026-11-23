@@ -1,10 +1,10 @@
-// Admin Settings → Set up (labels, bands, score weights, update rules) and Org Fit scores.
+// Admin Settings → Set up (labels, bands, score weights, update rules).
 import { useState } from 'react'
-import { Check, Plus, X, SlidersHorizontal, Award, Scale, Clock, Users, Search } from 'lucide-react'
+import { Check, Plus, X, SlidersHorizontal, Award, Scale, Clock } from 'lucide-react'
 import { useStore } from '../store'
-import { Field, NumInput, Badge, Avatar, useFeedback, ScoreDot } from '../components/ui'
-import { byId, DEFAULT_BANDS, personScore, band } from '../lib/calc'
-import { fmtPct, round } from '../lib/utils'
+import { Field, NumInput, Badge, useFeedback } from '../components/ui'
+import { DEFAULT_BANDS } from '../lib/calc'
+import { round } from '../lib/utils'
 
 const TONES = ['green', 'blue', 'amber', 'red', 'violet', 'gray']
 
@@ -132,43 +132,6 @@ export function SetupPanel() {
         {errors.length > 0 && <span className="small" style={{ color: 'var(--red)' }}>{errors[0]}</span>}
         <div className="spacer" />
         <button className="btn primary" onClick={save}><Check size={15} /> Save set up</button>
-      </div>
-    </div>
-  )
-}
-
-export function OrgFitPanel() {
-  const { state } = useStore()
-  const cycle = byId(state.cycles, state.viewCycleId)
-  const [q, setQ] = useState('')
-  const people = state.staff.filter((s) => s.active !== false && s.departmentId && s.name.toLowerCase().includes(q.trim().toLowerCase()))
-  const w = state.settings.scoring || { kpiWeight: 70, orgFitWeight: 30 }
-  return (
-    <div className="card">
-      <div className="card-head">
-        <Users size={18} color="var(--blue-600)" /><h3>Organizational Fit scores · {cycle.name}</h3>
-        <div className="spacer" />
-        <div className="input-group" style={{ width: 200 }}><Search size={14} style={{ position: 'absolute', left: 10, color: 'var(--muted)' }} /><input className="input sm" style={{ paddingLeft: 30 }} placeholder="Search person" value={q} onChange={(e) => setQ(e.target.value)} /></div>
-      </div>
-      <div className="scroll-x">
-        <table className="table">
-          <thead><tr><th>Person</th><th>Department / team</th><th className="center">KPI score</th><th className="center">Org Fit score</th><th className="center">Final score</th><th>Band</th></tr></thead>
-          <tbody>
-            {people.map((p) => {
-              const sc = personScore(state, p.id, cycle.id)
-              return (
-                <tr key={p.id}>
-                  <td><div className="row gap-6"><Avatar name={p.name} size="sm" /><div><div className="semi small">{p.name}</div><div className="tiny muted">{p.title}{sc.isLead ? ' · team lead' : ''}</div></div></div></td>
-                  <td className="small">{byId(state.departments, p.departmentId)?.name}{p.teamId ? ` · ${byId(state.teams, p.teamId)?.name}` : ''}</td>
-                  <td className="center">{sc.kpiPart === null ? <span className="tiny muted">no KPIs</span> : <ScoreDot value={sc.kpiPart} title={sc.isLead ? `Average of ${sc.members} team members` : 'Average of own KPIs'} />}</td>
-                  <td className="center">{sc.orgFit === null ? <span className="tiny muted">not rated yet</span> : <ScoreDot value={sc.orgFit} muted />}</td>
-                  <td className="center">{sc.final === null ? <span className="tiny muted">—</span> : <ScoreDot value={sc.final} size="lg" />}</td>
-                  <td>{sc.final === null ? <span className="tiny muted">—</span> : <Badge tone={band(state, sc.final).tone}>{band(state, sc.final).label}</Badge>}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
       </div>
     </div>
   )

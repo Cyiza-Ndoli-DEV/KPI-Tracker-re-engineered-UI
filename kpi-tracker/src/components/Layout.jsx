@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { LayoutDashboard, CalendarRange, Target, Wand2, FileClock, UserCheck, Trophy, Settings, Gauge, BarChart3, CalendarDays, ArrowLeft, AlignLeft, CircleUserRound, Power, User, HeartHandshake } from 'lucide-react'
-import { useStore, useCurrentUser } from '../store'
+import { useStore, useCurrentUser, currentUserId } from '../store'
 import { ROLES } from '../data/seed'
 import { Link, navigate, useFeedback } from './ui'
 import { fmtDate, todayISO } from '../lib/utils'
@@ -17,16 +17,16 @@ export const NAV = [
   { to: '/reports', label: 'Reports', icon: BarChart3, roles: ['admin', 'dept_head', 'team_lead'] },
   // managers find rankings inside Reports; employees keep the stand-alone page
   { to: '/rankings', label: 'Rankings', icon: Trophy, roles: 'all', menuRoles: ['employee', 'employee2'] },
-  { to: '/org-fit', label: 'Org Fit Scores', icon: HeartHandshake, roles: ['admin'] },
+  { to: '/org-fit', label: 'Ratings', icon: HeartHandshake, roles: 'all' },
   { to: '/admin', label: 'Admin Settings', icon: Settings, roles: ['admin'], count: 'requests' },
 ]
 
 export const allowed = (item, role) => !item.roles || item.roles === 'all' || item.roles.includes(role)
 
-const PAGE_LABEL = { '': 'Dashboard', cycles: 'Review Cycles', goals: 'Goals', kpis: 'KPIs', wizard: 'Goal Setup Wizard', drafts: 'Drafts', 'my-kpis': 'My KPIs', rankings: 'Rankings', reports: 'Reports', 'org-fit': 'Org Fit Scores', admin: 'Admin Settings' }
+const PAGE_LABEL = { '': 'Dashboard', cycles: 'Review Cycles', goals: 'Goals', kpis: 'KPIs', wizard: 'Goal Setup Wizard', drafts: 'Drafts', 'my-kpis': 'My KPIs', rankings: 'Rankings', reports: 'Reports', admin: 'Admin Settings' }
 
 export default function Layout({ route, children }) {
-  const { state, setRole, setViewCycle } = useStore()
+  const { state, setDemoUser, setViewCycle } = useStore()
   const { toast } = useFeedback()
   const user = useCurrentUser()
   const [collapsed, setCollapsed] = useState(false)
@@ -36,6 +36,7 @@ export default function Layout({ route, children }) {
   }
   const isActive = (to) => (to === '/' ? route.path === '/' : route.path.startsWith(to))
   const first = route.parts[0] || ''
+  const ratingsLabel = state.role === 'admin' ? 'Organizational Fit' : 'Ratings'
 
   return (
     <div className="shell">
@@ -70,7 +71,7 @@ export default function Layout({ route, children }) {
               {NAV.filter((n) => allowed(n, state.role) && (!n.menuRoles || n.menuRoles.includes(state.role))).map((n) => (
                 <Link key={n.to} to={n.to} className={`hr-nav-item ${isActive(n.to) ? 'active' : ''}`}>
                   <n.icon size={17} />
-                  <span>{n.label}</span>
+                  <span>{n.to === '/org-fit' ? ratingsLabel : n.label}</span>
                   {n.count && counts[n.count] > 0 && <span className={`count ${n.count === 'requests' ? 'warn' : ''}`}>{counts[n.count]}</span>}
                 </Link>
               ))}
@@ -84,7 +85,7 @@ export default function Layout({ route, children }) {
 
         <div className="hr-main">
           <div className="hr-crumb">
-            <span>{PAGE_LABEL[first] ?? 'KPI Tracker'}</span>
+            <span>{first === 'org-fit' ? ratingsLabel : PAGE_LABEL[first] ?? 'KPI Tracker'}</span>
             <div className="spacer" />
             <span className="crumb-chip"><CalendarDays size={13} /> Today: {fmtDate(todayISO())}</span>
             <label className="crumb-field">
@@ -97,9 +98,11 @@ export default function Layout({ route, children }) {
             </label>
             <label className="crumb-field">
               View as
-              <select value={state.role} onChange={(e) => setRole(e.target.value)}>
-                {Object.entries(ROLES).map(([k, r]) => (
-                  <option key={k} value={k}>{r.label} — {byId(state.staff, r.userId)?.name}</option>
+              <select value={currentUserId(state)} onChange={(e) => setDemoUser(e.target.value)}>
+                {state.staff.filter((person) => person.active !== false).map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.name} ? {person.id === ROLES.admin.userId ? ROLES.admin.label : person.title}
+                  </option>
                 ))}
               </select>
             </label>

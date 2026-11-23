@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { createSeed, ROLES } from './data/seed'
 import { uid, nowISO, todayISO, minISO, addDays, round, sum } from './lib/utils'
 import { byId, currentPeriod, childAllocations, allocationUpdates, unitName, kpiPeriods, cumulativeAt } from './lib/calc'
+import { assignedRatingSections, changedRatingSections, defaultRatingSetup, fitPoints, ratingSection, ratingSetupError, ratingStatus, validRatings } from './lib/orgFit'
 import { commitDraftToEntities, draftFromGoal } from './lib/draft'
 
 const VERSION = 9
@@ -20,7 +21,7 @@ function load() {
   }
 }
 
-export const currentUserId = (s) => ROLES[s.role].userId
+export const currentUserId = (s) => s.demoUserId ?? ROLES[s.role].userId
 
 export function StoreProvider({ children }) {
   const [state, setState] = useState(() => load() || createSeed())
@@ -52,7 +53,16 @@ export function StoreProvider({ children }) {
     }
 
     return {
-      setRole: (role) => mutate((n) => { n.role = role }),
+      setDemoUser: (id) => mutate((n) => {
+        const person = byId(n.staff, id)
+        if (!person || person.active === false) return
+        const seededRole = Object.keys(ROLES).find((role) => ROLES[role].userId === id)
+        n.role = seededRole || (
+          n.departments.some((department) => department.headId === id) ? 'dept_head'
+            : n.teams.some((team) => team.leadId === id) ? 'team_lead' : 'employee'
+        )
+        n.demoUserId = id
+      }),
       setViewCycle: (id) => mutate((n) => { n.viewCycleId = id }),
       resetDemo: () => setState(createSeed()),
       updateSettings: (patch) => mutate((n) => {
@@ -62,12 +72,75 @@ export function StoreProvider({ children }) {
         const keys = Object.keys(patch).filter((k) => JSON.stringify(before[k]) !== JSON.stringify(n.settings[k]))
         if (keys.length) log(n, { action: 'Settings changed', subject: 'Admin settings · set up', oldValue: keys.map((k) => `${k}: ${show(before[k])}`).join('; '), newValue: keys.map((k) => `${k}: ${show(n.settings[k])}`).join('; ') })
       }),
-      setOrgFit: (cycleId, scores) => mutate((n) => {
-        n.orgFit = n.orgFit || {}
-        const before = { ...(n.orgFit[cycleId] || {}) }
-        n.orgFit[cycleId] = { ...before, ...scores }
-        const changed = Object.keys(scores).filter((k) => String(before[k] ?? '') !== String(scores[k] ?? ''))
-        if (changed.length) log(n, { action: 'Org Fit scores updated', subject: `${byId(n.cycles, cycleId)?.name}`, oldValue: changed.map((k) => `${staffName(n, k)} ${before[k] ?? '—'}`).join('; '), newValue: changed.map((k) => `${staffName(n, k)} ${scores[k] === '' ? '—' : scores[k]}`).join('; ') })
+      updateRatingSetup: (cycleId, setup) => mutate((n) => {
+        const cycle = byId(n.cycles, cycleId)
+        if (n.role !== 'admin' || !cycle || ratingSetupError(setup)) return
+        const previous = n.orgFitSetup?.[cycleId] ?? defaultRatingSetup
+        const next = {
+          enabled: setup.enabled === true,
+          startDate: setup.startDate,
+          endDate: setup.endDate,
+          categories: structuredClone(setup.categories),
+        }
+        if (JSON.stringify(previous) === JSON.stringify(next)) return
+
+        const changedSections = changedRatingSections(previous, next)
+        const cycleSubmissions = n.orgFitSubmissions?.[cycleId] || {}
+        const archived = {}
+        const scoringChanged = changedSections.length || Object.keys(previous.categories).length !== Object.keys(next.categories).length ||
+          Object.entries(next.categories).some(([key, category]) => previous.categories[key]?.points !== category.points)
+        if (scoringChanged) {
+          for (const [staffId, submissions] of Object.entries(cycleSubmissions)) {
+            for (const section of changedSections) {
+              if (!submissions[section]) continue
+              const archivedSections = archived[staffId] ??= {}
+              archivedSections[section] = submissions[section]
+              delete submissions[section]
+            }
+            const points = fitPoints(next, submissions, staffId)
+            n.orgFit ??= {}
+            const scores = n.orgFit[cycleId] ??= {}
+            if (points === null) delete scores[staffId]
+            else scores[staffId] = round(points / 40 * 100, 2)
+          }
+        }
+        if (Object.keys(archived).length) {
+          n.orgFitRatingArchive ??= {}
+          const history = n.orgFitRatingArchive[cycleId] ??= []
+          history.push({ at: nowISO(), categories: previous.categories, submissions: archived })
+        }
+
+        n.orgFitSetup ??= {}
+        n.orgFitSetup[cycleId] = next
+        log(n, { action: 'Org Fit settings updated', subject: cycle.name, oldValue: ratingStatus(previous), newValue: ratingStatus(next) })
+      }),
+      submitOrgFitRatings: (cycleId, staffId, section, row) => mutate((n) => {
+        const reviewerId = currentUserId(n)
+        const reviewer = byId(n.staff, reviewerId)
+        const employee = byId(n.staff, staffId)
+        const cycle = byId(n.cycles, cycleId)
+        const setup = n.orgFitSetup?.[cycleId] ?? defaultRatingSetup
+        if (n.role === 'admin' || !cycle || ratingStatus(setup) !== 'Open' || !assignedRatingSections(setup, n, reviewer, employee).includes(section) ||
+            !validRatings(setup, section, row)) return
+
+        n.orgFitSubmissions ??= {}
+        const cycleSubmissions = n.orgFitSubmissions[cycleId] ??= {}
+        const submissions = cycleSubmissions[staffId] ??= {}
+        const reviewers = submissions[section] ??= {}
+        if (JSON.stringify(reviewers[reviewerId]) === JSON.stringify(row)) return
+
+        reviewers[reviewerId] = row.slice()
+        const points = fitPoints(setup, submissions, staffId)
+        if (points !== null) {
+          n.orgFit ??= {}
+          const scores = n.orgFit[cycleId] ??= {}
+          scores[staffId] = round(points / 40 * 100, 2)
+        }
+        log(n, {
+          action: 'Org Fit rating submitted',
+          subject: [employee.name, ratingSection(setup, section).name, cycle.name].join(' ? '),
+          newValue: 'Submitted',
+        })
       }),
 
       // ---------- cycles ----------
