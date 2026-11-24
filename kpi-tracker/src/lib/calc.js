@@ -209,7 +209,7 @@ export const orgFitOf = (state, staffId, cycleId) => {
  * Final score for a person.
  *   Member:    KPI part = average of their own KPIs.
  *   Team lead: KPI part = average of their team members' KPI scores.
- *   Final = KPI part × KPI weight + Org Fit × Org Fit weight (weights from Settings; Org Fit missing → KPI part only).
+ *   Final = KPI part × KPI weight + Org Fit × Org Fit weight (weights from Settings, with missing components scored as zero).
  */
 export function personScore(state, staffId, cycleId, filter = {}, asOf) {
   const own = personKpiScore(state, staffId, cycleId, filter, asOf)
@@ -219,8 +219,7 @@ export function personScore(state, staffId, cycleId, filter = {}, asOf) {
   const kpiPart = isLead ? sum(memberScores) / memberScores.length : own
   const orgFit = orgFitOf(state, staffId, cycleId)
   const w = state.settings.scoring || { kpiWeight: 70, orgFitWeight: 30 }
-  let final = kpiPart
-  if (kpiPart !== null && orgFit !== null) final = (kpiPart * w.kpiWeight + orgFit * w.orgFitWeight) / (w.kpiWeight + w.orgFitWeight)
+  const final = ((kpiPart ?? 0) * w.kpiWeight + (orgFit ?? 0) * w.orgFitWeight) / 100
   return { own, kpiPart, isLead, members: members.length, orgFit, final, weights: w }
 }
 

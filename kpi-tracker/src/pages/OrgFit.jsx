@@ -1,8 +1,8 @@
 import { currentUserId, useStore } from '../store'
 import { useEffect, useState } from 'react'
-import { Search, Star, Users } from 'lucide-react'
+import { CalendarClock, Lock, PencilLine, Search, Star, Trash2, Users } from 'lucide-react'
 import { Avatar, Badge, Modal, ScoreDot, useFeedback } from '../components/ui'
-import { assignedRatingSections, changedRatingSections, defaultRatingSetup, ratingCategoryType, ratingSection, ratingSetupError, ratingStatus, validRatings } from '../lib/orgFit'
+import { assignedRatingSections, changedRatingSections, criterionPoints, defaultRatingSetup, ratingCategoryType, ratingSection, ratingSetupError, ratingStatus, starPoints, validRatings } from '../lib/orgFit'
 import { band, byId, personScore } from '../lib/calc'
 import { fmtDate, uid } from '../lib/utils'
 
@@ -33,7 +33,7 @@ export default function OrgFit() {
 }
 
 function ratingWindow(setup, status) {
-  if (status === 'Off') return 'Rating submissions are turned off.'
+  if (status === 'Off') return 'You can submit or edit ratings when your administrator turns submissions on.'
   if (status === 'Scheduled') return 'Ratings open on ' + fmtDate(setup.startDate) + '.'
   if (status === 'Closed') return 'Ratings closed on ' + fmtDate(setup.endDate) + '.'
   return setup.endDate ? 'Ratings are open through ' + fmtDate(setup.endDate) + '.' : 'Rating submissions are open.'
@@ -96,8 +96,8 @@ function RatingCategories({ cycle, setup }) {
             <td>{category.dimensions.length}</td>
             <td>{category.points}</td>
             <td><div className="row gap-6">
-              <button className="btn sm" onClick={() => setEditor({ id, category })}>Edit</button>
-              <button className="btn sm" onClick={() => setDeleting(id)}>Delete</button>
+              <button className="btn primary icon sm" title="Edit category" aria-label={'Edit ' + category.name} onClick={() => setEditor({ id, category })}><PencilLine size={14} aria-hidden="true" /></button>
+              <button className="btn danger icon sm" title="Delete category" aria-label={'Delete ' + category.name} onClick={() => setDeleting(id)}><Trash2 size={14} aria-hidden="true" /></button>
             </div></td>
           </tr>
         ))}</tbody>
@@ -107,7 +107,7 @@ function RatingCategories({ cycle, setup }) {
       {deleting && <Modal title={'Delete ' + setup.categories[deleting].name + '?'} onClose={() => setDeleting(null)} footer={
         <>
           <button className="btn" onClick={() => setDeleting(null)}>Cancel</button>
-          <button className="btn primary" onClick={() => save(removeCategory, 'Rating category deleted')}>Delete category</button>
+          <button className="btn danger-solid icon" title="Confirm delete" aria-label="Confirm delete category" onClick={() => save(removeCategory, 'Rating category deleted')}><Trash2 size={16} aria-hidden="true" /></button>
         </>
       }>
         <p>This removes the category from this cycle and recalculates scores.</p>
@@ -140,24 +140,26 @@ function CategoryEditor({ setup, editor, hasRatings, onSave, onClose }) {
               {Object.entries(defaultRatingSetup.categories).map(([key, value]) => <option key={key} value={key}>{value.name}</option>)}
             </select>
           </label>
-          <label className="col gap-6 small">Points
+          <label className="col gap-6 small">Category points
             <input className="input" type="number" min="1" step="1" value={category.points || ''} onChange={(event) => setCategory({ ...category, points: Number(event.target.value) })} />
           </label>
         </div>
-        {category.dimensions.map(([name, description], index) => {
+        {category.dimensions.map(([name, description, points], index) => {
           const changeCriterion = (nextCriterion) => setCategory((current) => ({
             ...current, dimensions: current.dimensions.map((criterion, i) => i === index ? nextCriterion : criterion),
           }))
           return (
             <div className="rating-settings-grid" key={index}>
               <label className="col gap-6 small">Criterion {index + 1}
-                <input className="input" value={name} onChange={(event) => changeCriterion([event.target.value, description])} />
+                <input className="input" value={name} onChange={(event) => changeCriterion([event.target.value, description, points])} />
               </label>
-              <label className="col gap-6 small">Description
-                <input className="input" value={description} onChange={(event) => changeCriterion([name, event.target.value])} />
+              <label className="col gap-6 small">Criterion points
+                <input className="input" type="number" min="0" step="any" value={points ?? ''}
+                  placeholder={formatRatingPoints(criterionPoints(category, index))}
+                  onChange={(event) => changeCriterion([name, description, event.target.value === '' ? null : Number(event.target.value)])} />
               </label>
-              <button className="btn sm" aria-label={'Delete criterion ' + (index + 1)} disabled={category.dimensions.length === 1}
-                onClick={() => setCategory({ ...category, dimensions: category.dimensions.filter((_, i) => i !== index) })}>Delete</button>
+              <button className="btn danger icon sm" title="Delete criterion" aria-label={'Delete criterion ' + (index + 1)} disabled={category.dimensions.length === 1}
+                onClick={() => setCategory({ ...category, dimensions: category.dimensions.filter((_, i) => i !== index) })}><Trash2 size={14} aria-hidden="true" /></button>
             </div>
           )
         })}
@@ -177,7 +179,7 @@ function RatingSetup({ cycle, saved, status }) {
   const changed = JSON.stringify(draft) !== JSON.stringify(saved)
 
   return (
-    <form className="card" onSubmit={(event) => {
+    <form className="card rating-schedule" onSubmit={(event) => {
       event.preventDefault()
       if (!changed || error) return
       updateRatingSetup(cycle.id, draft)
@@ -186,25 +188,23 @@ function RatingSetup({ cycle, saved, status }) {
       <div className="card-head">
         <h3>Rating settings · {cycle.name}</h3>
         <div className="spacer" />
-        <Badge tone={status === 'Open' ? 'green' : 'gray'}>{status}</Badge>
+        <Badge tone={status === 'Open' ? 'green' : status === 'Scheduled' ? 'amber' : 'red'} dot>{status === 'Off' ? 'Ratings off' : status}</Badge>
       </div>
-      <div className="rating-setup col gap-16">
-        <p className="small muted" aria-live="polite">{ratingWindow(saved, status)}</p>
+      <div className="rating-setup col gap-10">
         <label className="row gap-6 semi">
           <input type="checkbox" checked={draft.enabled} onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} />
           Enable rating submissions
         </label>
-        <div className="rating-settings-grid">
+        <div className="rating-schedule-dates">
           <label className="col gap-6 small">Opening date
-            <input className="input" type="date" value={draft.startDate} onChange={(event) => setDraft({ ...draft, startDate: event.target.value })} />
+            <input className="input sm" type="date" value={draft.startDate} onChange={(event) => setDraft({ ...draft, startDate: event.target.value })} />
           </label>
           <label className="col gap-6 small">Closing date
-            <input className="input" type="date" value={draft.endDate} onChange={(event) => setDraft({ ...draft, endDate: event.target.value })} />
+            <input className="input sm" type="date" value={draft.endDate} onChange={(event) => setDraft({ ...draft, endDate: event.target.value })} />
           </label>
         </div>
-        <p className="tiny muted">Dates are optional and use Kampala time. The closing date is included.</p>
         {error && <p className="small" role="alert">{error}</p>}
-        <div><button className="btn primary" disabled={!changed || Boolean(error)}>Save rating settings</button></div>
+        <div className="row rating-schedule-actions"><button className="btn primary sm" disabled={!changed || Boolean(error)}>Save schedule</button></div>
       </div>
     </form>
   )
@@ -309,7 +309,19 @@ function PersonalRatings({ cycle, setup, status }) {
       <div className="card-head">
         <Users size={18} color="var(--blue-600)" /><h3>My rating assignments · {cycle.name}</h3>
       </div>
-      <p className="rating-availability small muted" aria-live="polite">{ratingWindow(setup, status)}</p>
+      <div aria-live="polite">
+        {status === 'Open' ? (
+          <p className="rating-availability small muted">{ratingWindow(setup, status)}</p>
+        ) : (
+          <div className={'rating-status-banner' + (status === 'Scheduled' ? ' scheduled' : '')}>
+            {status === 'Scheduled' ? <CalendarClock size={20} aria-hidden="true" /> : <Lock size={20} aria-hidden="true" />}
+            <div>
+              <div className="semi">{status === 'Off' ? 'Ratings are turned off' : status === 'Scheduled' ? 'Ratings are not open yet' : 'Ratings are closed'}</div>
+              <div className="small">{ratingWindow(setup, status)}</div>
+            </div>
+          </div>
+        )}
+      </div>
       {assignments.length ? (
         <div className="scroll-x">
           <table className="table">
@@ -339,12 +351,14 @@ function PersonalRatings({ cycle, setup, status }) {
 }
 
 const scale = ['Poor', 'Fair', 'Good', 'Very good', 'Excellent']
+const formatRatingPoints = new Intl.NumberFormat('en', { maximumSignificantDigits: 8 }).format
 
 function RatingForm({ cycle, setup, status, assignment, onClose }) {
   const { submitOrgFitRatings } = useStore()
   const { toast } = useFeedback()
   const { employee, section, name, row } = assignment
-  const { dimensions } = ratingSection(setup, section)
+  const category = ratingSection(setup, section)
+  const { dimensions } = category
   const readOnly = status !== 'Open'
   const [values, setValues] = useState(() => row?.slice() || Array(dimensions.length).fill(''))
 
@@ -375,14 +389,16 @@ function RatingForm({ cycle, setup, status, assignment, onClose }) {
               <div className="rating-stars rating-stars-labeled" role="radiogroup" aria-label={label}>
                 {scale.map((word, position) => {
                   const value = position + 1
+                  const points = formatRatingPoints(starPoints(criterionPoints(category, index), value))
                   return (
                     <label className="rating-star" key={word} title={word}>
                       <input type="radio" name={section + '-rating-' + index}
-                        aria-label={value + ' of 5 — ' + word}
+                        aria-label={value + ' of 5, ' + word + ', ' + points + ' points'}
                         checked={values[index] === value} disabled={readOnly}
                         onChange={() => setValues((current) => current.map((rating, i) => i === index ? value : rating))} />
                       <Star size={20} fill={value <= values[index] ? 'currentColor' : 'none'} aria-hidden="true" />
                       <span className="rating-star-word" aria-hidden="true">{word}</span>
+                      <span className="rating-star-word" aria-hidden="true">{points} pts</span>
                     </label>
                   )
                 })}

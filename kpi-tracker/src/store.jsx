@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { createSeed, ROLES } from './data/seed'
 import { uid, nowISO, todayISO, minISO, addDays, round, sum } from './lib/utils'
 import { byId, currentPeriod, childAllocations, allocationUpdates, unitName, kpiPeriods, cumulativeAt } from './lib/calc'
-import { assignedRatingSections, changedRatingSections, defaultRatingSetup, fitPoints, ratingSection, ratingSetupError, ratingStatus, validRatings } from './lib/orgFit'
+import { assignedRatingSections, changedRatingSections, criterionPoints, defaultRatingSetup, fitPoints, ratingSection, ratingSetupError, ratingStatus, validRatings } from './lib/orgFit'
 import { commitDraftToEntities, draftFromGoal } from './lib/draft'
 
 const VERSION = 9
@@ -88,7 +88,11 @@ export function StoreProvider({ children }) {
         const cycleSubmissions = n.orgFitSubmissions?.[cycleId] || {}
         const archived = {}
         const scoringChanged = changedSections.length || Object.keys(previous.categories).length !== Object.keys(next.categories).length ||
-          Object.entries(next.categories).some(([key, category]) => previous.categories[key]?.points !== category.points)
+          Object.entries(next.categories).some(([key, category]) => {
+            const prior = previous.categories[key]
+            return prior?.points !== category.points ||
+              category.dimensions.some((_, index) => criterionPoints(category, index) !== criterionPoints(prior, index))
+          })
         if (scoringChanged) {
           for (const [staffId, submissions] of Object.entries(cycleSubmissions)) {
             for (const section of changedSections) {

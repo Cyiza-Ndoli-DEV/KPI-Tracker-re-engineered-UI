@@ -23,8 +23,7 @@ export default function Rankings({ embedded = false, deptFilter }) {
       let items = unitAllocations(state, 'individual', p.id, cycle.id)
       if (kpiId !== 'all') items = items.filter((it) => it.kpi.id === kpiId)
       const sc = personScore(state, p.id, cycle.id, filter)
-      if (!items.length && !sc.isLead) continue
-      if (sc.final === null) continue
+      if (kpiId !== 'all' && !items.length && !sc.isLead) continue
       out.push({ p, ...sc, count: items.length })
     }
     return out.sort((a, b) => b.final - a.final)

@@ -19,7 +19,7 @@ function lastUpdateOf(state, allocs, asOf) {
 }
 
 /**
- * One row per department / team / person that holds at least one KPI share in the cycle.
+ * Includes employees without KPI shares in unfiltered individual reports.
  * level: 'department' | 'team' | 'individual'
  */
 export function levelRows(state, cycle, level, asOf, deptId = 'all', filter = {}) {
@@ -33,7 +33,7 @@ export function levelRows(state, cycle, level, asOf, deptId = 'all', filter = {}
     let items = unitAllocations(state, level, u.id, cycle.id)
     if (filter.goalId) items = items.filter((it) => it.goal.id === filter.goalId)
     if (filter.kpiId) items = items.filter((it) => it.kpi.id === filter.kpiId)
-    if (!items.length) continue
+    if (!items.length && (level !== 'individual' || filter.goalId || filter.kpiId || !u.departmentId)) continue
     const details = items.map((it) => itemDetail(state, it, asOf))
     const leaves = items.flatMap((it) => leafAllocs(state, it.alloc))
     const { last, count } = lastUpdateOf(state, leaves, asOf)

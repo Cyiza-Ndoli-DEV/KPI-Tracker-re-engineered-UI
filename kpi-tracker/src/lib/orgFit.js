@@ -60,12 +60,20 @@ export function assignedRatingSections(setup, state, reviewer, employee) {
   })
 }
 
+export function criterionPoints(category, index) {
+  return category.dimensions[index][2] ?? category.points / category.dimensions.length
+}
+
+export function starPoints(points, stars) {
+  return points * stars / 5
+}
+
 export function changedRatingSections(previous, next) {
   return Object.entries(previous.categories).flatMap(([key, category]) => {
     const updated = next.categories[key]
     const type = ratingCategoryType(key, category)
     if (updated && type === ratingCategoryType(key, updated) &&
-        JSON.stringify(category.dimensions) === JSON.stringify(updated.dimensions)) return []
+        JSON.stringify(category.dimensions.map(([name]) => name)) === JSON.stringify(updated.dimensions.map(([name]) => name))) return []
     return type === 'keeperLead' ? [key, selfSection(key)] : [key]
   })
 }
@@ -88,6 +96,10 @@ export function ratingSetupError(setup) {
     if (!category.name.trim() || !category.dimensions.length || category.dimensions.some(([name]) => !name.trim())) {
       return 'Give each category a name and at least one named criterion.'
     }
+    if (category.dimensions.some((_, index) => {
+      const points = criterionPoints(category, index)
+      return !Number.isFinite(points) || points <= 0
+    })) return 'Enter positive points for each criterion.'
   }
   return ''
 }
@@ -125,9 +137,12 @@ export function validRatings(setup, section, row) {
 function sectionPoints(setup, section, rows) {
   const values = Object.values(rows || {})
   if (!values.length || !values.every((row) => validRatings(setup, section, row))) return null
-  const total = values.reduce((sum, row) => row.reduce((subtotal, rating) => subtotal + rating, sum), 0)
-  const { dimensions, points } = ratingSection(setup, section)
-  return total / values.length / dimensions.length / 5 * points
+  const category = ratingSection(setup, section)
+  const weights = category.dimensions.map((_, index) => criterionPoints(category, index))
+  const maxPerReviewer = weights.reduce((sum, points) => sum + points, 0)
+  const total = values.reduce((sum, row) =>
+    row.reduce((subtotal, stars, index) => subtotal + starPoints(weights[index], stars), sum), 0)
+  return total / values.length / maxPerReviewer * category.points
 }
 
 export function fitPoints(setup, submissions, employeeId) {
