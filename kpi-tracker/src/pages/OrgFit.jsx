@@ -203,20 +203,15 @@ function RatingSetup({ cycle, saved, status }) {
             onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} />
         </label>
         <div className="rating-schedule-dates">
-          <label className="rating-schedule-field">
-            <span className="small semi">Opens on</span>
-            <span className="rating-date" data-empty={!draft.startDate}>
-              <input className="input" type="date" name="startDate" value={draft.startDate} onChange={(event) => setDraft({ ...draft, startDate: event.target.value })} />
-              <span className="rating-date-placeholder" aria-hidden="true">Start date</span>
-            </span>
+          <label className="rating-date" data-empty={!draft.startDate}>
+            <input aria-label="Start date" className="input" type="date" name="startDate" value={draft.startDate}
+              onChange={(event) => setDraft({ ...draft, startDate: event.target.value })} />
+            <span className="rating-date-placeholder" aria-hidden="true">Start date</span>
           </label>
-          <label className="rating-schedule-field">
-            <span className="small semi">Closes on</span>
-            <span className="rating-date" data-empty={!draft.endDate}>
-              <input className="input" type="date" name="endDate" value={draft.endDate} aria-invalid={Boolean(error)}
-                aria-describedby={error ? 'rating-schedule-error' : undefined} onChange={(event) => setDraft({ ...draft, endDate: event.target.value })} />
-              <span className="rating-date-placeholder" aria-hidden="true">End date</span>
-            </span>
+          <label className="rating-date" data-empty={!draft.endDate}>
+            <input aria-label="End date" className="input" type="date" name="endDate" value={draft.endDate} aria-invalid={Boolean(error)}
+              aria-describedby={error ? 'rating-schedule-error' : undefined} onChange={(event) => setDraft({ ...draft, endDate: event.target.value })} />
+            <span className="rating-date-placeholder" aria-hidden="true">End date</span>
           </label>
         </div>
         {error && <p className="small rating-schedule-error" id="rating-schedule-error" role="alert">{error}</p>}

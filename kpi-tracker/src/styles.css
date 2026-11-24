@@ -621,11 +621,10 @@ button { font-family: inherit; }
 .rating-switch:checked::before { transform: translateX(18px); }
 .rating-switch:focus-visible { outline: 2px solid var(--blue-600); outline-offset: 3px; }
 .rating-schedule-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.rating-schedule-field { display: grid; gap: 6px; min-width: 0; }
 .rating-date { position: relative; display: block; min-width: 0; }
 .rating-date .input { min-width: 0; width: 100%; min-height: 44px; }
-.rating-date-placeholder { display: none; position: absolute; inset-inline-start: 13px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; pointer-events: none; }
-.rating-date[data-empty="true"]:not(:focus-within) .rating-date-placeholder { display: block; }
+.rating-date-placeholder { display: none; position: absolute; inset: 2px 42px 2px 12px; align-items: center; background: white; color: var(--muted); font-size: 14px; pointer-events: none; }
+.rating-date[data-empty="true"]:not(:focus-within) .rating-date-placeholder { display: flex; }
 .rating-date[data-empty="true"] input:not(:focus) { color: transparent; }
 .rating-date[data-empty="true"] input:not(:focus)::-webkit-datetime-edit { color: transparent; }
 .rating-schedule-error { color: var(--red); }
