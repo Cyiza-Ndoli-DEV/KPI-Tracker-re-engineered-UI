@@ -196,11 +196,13 @@ function RatingSetup({ cycle, saved, status }) {
           Enable rating submissions
         </label>
         <div className="rating-schedule-dates">
-          <label className="col gap-6 small">Opening date
-            <input className="input sm" type="date" value={draft.startDate} onChange={(event) => setDraft({ ...draft, startDate: event.target.value })} />
+          <label className="rating-date" data-empty={!draft.startDate}>
+            <input aria-label="Start date" className="input sm" type="date" value={draft.startDate} onChange={(event) => setDraft({ ...draft, startDate: event.target.value })} />
+            <span aria-hidden="true">Start date</span>
           </label>
-          <label className="col gap-6 small">Closing date
-            <input className="input sm" type="date" value={draft.endDate} onChange={(event) => setDraft({ ...draft, endDate: event.target.value })} />
+          <label className="rating-date" data-empty={!draft.endDate}>
+            <input aria-label="End date" className="input sm" type="date" value={draft.endDate} onChange={(event) => setDraft({ ...draft, endDate: event.target.value })} />
+            <span aria-hidden="true">End date</span>
           </label>
         </div>
         {error && <p className="small" role="alert">{error}</p>}
