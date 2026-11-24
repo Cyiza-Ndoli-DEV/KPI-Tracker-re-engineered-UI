@@ -185,28 +185,44 @@ function RatingSetup({ cycle, saved, status }) {
       updateRatingSetup(cycle.id, draft)
       toast('Rating settings saved')
     }}>
-      <div className="card-head">
-        <h3>Rating settings · {cycle.name}</h3>
+      <div className="card-head rating-schedule-head">
+        <div className="rating-schedule-icon"><CalendarClock size={22} aria-hidden="true" /></div>
+        <div>
+          <h3>Rating schedule</h3>
+          <div className="small muted">{cycle.name}</div>
+        </div>
         <div className="spacer" />
-        <Badge tone={status === 'Open' ? 'green' : status === 'Scheduled' ? 'amber' : 'red'} dot>{status === 'Off' ? 'Ratings off' : status}</Badge>
+        <div role="status">
+          <Badge tone={status === 'Open' ? 'green' : status === 'Scheduled' ? 'amber' : 'red'} dot>{status === 'Off' ? 'Ratings off' : status}</Badge>
+        </div>
       </div>
-      <div className="rating-setup col gap-10">
-        <label className="row gap-6 semi">
-          <input type="checkbox" checked={draft.enabled} onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} />
-          Enable rating submissions
+      <div className="rating-setup col gap-20">
+        <label className="rating-schedule-switch">
+          <span className="semi">Enable rating submissions</span>
+          <input className="rating-switch" type="checkbox" role="switch" checked={draft.enabled}
+            onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} />
         </label>
         <div className="rating-schedule-dates">
-          <label className="rating-date" data-empty={!draft.startDate}>
-            <input aria-label="Start date" className="input sm" type="date" value={draft.startDate} onChange={(event) => setDraft({ ...draft, startDate: event.target.value })} />
-            <span aria-hidden="true">Start date</span>
+          <label className="rating-schedule-field">
+            <span className="small semi">Opens on</span>
+            <span className="rating-date" data-empty={!draft.startDate}>
+              <input className="input" type="date" name="startDate" value={draft.startDate} onChange={(event) => setDraft({ ...draft, startDate: event.target.value })} />
+              <span className="rating-date-placeholder" aria-hidden="true">Start date</span>
+            </span>
           </label>
-          <label className="rating-date" data-empty={!draft.endDate}>
-            <input aria-label="End date" className="input sm" type="date" value={draft.endDate} onChange={(event) => setDraft({ ...draft, endDate: event.target.value })} />
-            <span aria-hidden="true">End date</span>
+          <label className="rating-schedule-field">
+            <span className="small semi">Closes on</span>
+            <span className="rating-date" data-empty={!draft.endDate}>
+              <input className="input" type="date" name="endDate" value={draft.endDate} aria-invalid={Boolean(error)}
+                aria-describedby={error ? 'rating-schedule-error' : undefined} onChange={(event) => setDraft({ ...draft, endDate: event.target.value })} />
+              <span className="rating-date-placeholder" aria-hidden="true">End date</span>
+            </span>
           </label>
         </div>
-        {error && <p className="small" role="alert">{error}</p>}
-        <div className="row rating-schedule-actions"><button className="btn primary sm" disabled={!changed || Boolean(error)}>Save schedule</button></div>
+        {error && <p className="small rating-schedule-error" id="rating-schedule-error" role="alert">{error}</p>}
+      </div>
+      <div className="row rating-schedule-actions">
+        <button type="submit" className="btn primary" disabled={!changed || Boolean(error)}>Save schedule</button>
       </div>
     </form>
   )
