@@ -1,5 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { X, AlertCircle, CheckCircle2, Info, AlertTriangle } from 'lucide-react'
+import { createContext, useCallback, useContext, useEffect, useId, useRef, useState } from 'react'
+import { X, AlertCircle, CheckCircle2, Info, AlertTriangle, Search } from 'lucide-react'
 import { initials, round } from '../lib/utils'
 
 // ---------------- router (hash based so it works from any static host) ----------------
@@ -174,31 +174,39 @@ export function Person({ staff, sub, size = 'sm' }) {
   )
 }
 
-export function Field({ label, required, hint, error, children, field, style, inside = false }) {
+export function SearchField({ label, value, onChange, compact, autoFocus, style }) {
   return (
-    <div className="field" data-field={field} style={style}>
-      {inside ? (
-        <label className={`field-box ${error ? 'invalid-box' : ''}`}>
-          <span>{label}{required && <span className="req" aria-hidden="true">*</span>}</span>
+    <Field label={label} style={style}>
+      <span className="search-control">
+        <Search size={15} aria-hidden="true" />
+        <input type="search" className={compact ? 'input sm' : 'input'} value={value}
+          onChange={(event) => onChange(event.target.value)} autoFocus={autoFocus} />
+      </span>
+    </Field>
+  )
+}
+
+export function Field({ label, htmlFor, required, error, children, field, style, group = false }) {
+  const labelId = useId()
+  const caption = <span id={group ? labelId : undefined} className="label">{label}{required && <span className="req" aria-hidden="true">*</span>}</span>
+  return (
+    <div className={`field${error ? ' field-invalid' : ''}`} data-field={field} style={style}
+      role={group ? 'group' : undefined} aria-labelledby={group ? labelId : undefined}>
+      {label && !htmlFor && !group ? (
+        <label className="field-label">
+          {caption}
           {children}
         </label>
       ) : (
         <>
-          {label && (
-            <label>
-              {label}
-              {required && <span className="req">*</span>}
-            </label>
-          )}
+          {label && (group ? caption : <label htmlFor={htmlFor}>{caption}</label>)}
           {children}
         </>
       )}
-      {error ? (
+      {error && (
         <span className="err">
           <AlertCircle size={12} /> {error}
         </span>
-      ) : (
-        hint && <span className="hint">{hint}</span>
       )}
     </div>
   )

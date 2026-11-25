@@ -15,7 +15,6 @@ import KpiDetail from './pages/KpiDetail'
 import Wizard from './pages/Wizard'
 import Drafts from './pages/Drafts'
 import MyKpis from './pages/MyKpis'
-import Rankings from './pages/Rankings'
 import Admin from './pages/Admin'
 import OrgFit from './pages/OrgFit'
 import { ShieldAlert } from 'lucide-react'
@@ -26,10 +25,12 @@ function Router() {
   const route = useRoute()
   const { state } = useStore()
   const [a, b] = route.parts
+  const employee = isEmployeeRole(state.role)
+  const userId = currentUserId(state)
   const navItem = NAV.find((n) => n.to && n.to !== '/' && route.path.startsWith(n.to))
-  // anyone may open the page of a KPI share they hold themselves
-  const ownShare = (a === 'kpis' && route.parts[2] && state.allocations.find((x) => x.id === route.parts[2])?.unitId === currentUserId(state)) || (a === 'reports' && b === 'person' && route.parts[2] === currentUserId(state))
-  const blocked = navItem && !allowed(navItem, state.role) && !ownShare
+  const ownShare = a === 'kpis' && route.parts[2] && state.allocations.find((x) => x.id === route.parts[2])?.unitId === userId
+  const otherPersonReport = employee && a === 'reports' && b === 'person' && route.parts[2] !== userId
+  const blocked = otherPersonReport || (navItem && !allowed(navItem, state.role) && !ownShare)
 
   let page
   if (blocked)
@@ -50,10 +51,10 @@ function Router() {
   else if (a === 'wizard') page = <Wizard key={route.query.draft || `new-${route.seq}`} draftId={route.query.draft} />
   else if (a === 'drafts') page = <Drafts />
   else if (a === 'my-kpis') page = <MyKpis />
-  else if (a === 'rankings' && !isEmployeeRole(state.role)) page = <Reports key={`${state.role}-rank`} query={{ tab: 'ranking' }} />
-  else if (a === 'rankings') page = <Rankings />
+  else if (employee && (a === 'rankings' || a === 'reports')) page = <PersonReport key={`${userId}-${state.viewCycleId}`} id={userId} />
+  else if (a === 'rankings') page = <Reports key={`${userId}-${state.viewCycleId}-rank`} query={{ tab: 'ranking' }} />
   else if (a === 'reports' && b === 'person' && route.parts[2]) page = <PersonReport key={route.parts[2]} id={route.parts[2]} />
-  else if (a === 'reports') page = <Reports key={`${state.role}-${route.query.tab || ''}`} query={route.query} />
+  else if (a === 'reports') page = <Reports key={`${currentUserId(state)}-${state.viewCycleId}-${route.query.tab || ''}`} query={route.query} />
   else if (a === 'org-fit') page = <OrgFit />
   else if (a === 'admin') page = <Admin />
   else page = <Empty title="Page not found" action={<Link to="/" className="btn primary">Go home</Link>} />

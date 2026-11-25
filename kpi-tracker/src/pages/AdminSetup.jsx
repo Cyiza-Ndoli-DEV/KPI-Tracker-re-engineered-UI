@@ -91,11 +91,7 @@ export function SetupPanel() {
                 <Field label="KPI score weight"><div className="input-group"><NumInput className="input pr" value={scoring.kpiWeight} onChange={(v) => setScoring({ kpiWeight: v, orgFitWeight: 100 - (Number(v) || 0) })} /><span className="addon">%</span></div></Field>
                 <Field label="Org Fit score weight"><div className="input-group"><NumInput className="input pr" value={scoring.orgFitWeight} onChange={(v) => setScoring({ orgFitWeight: v, kpiWeight: 100 - (Number(v) || 0) })} /><span className="addon">%</span></div></Field>
               </div>
-              <div className="formula small">
-                <div><b>Member</b> = average of their own KPIs × {scoring.kpiWeight}% + Org Fit × {scoring.orgFitWeight}%</div>
-                <div className="mt-4"><b>Team lead</b> = average of their team members' KPI scores × {scoring.kpiWeight}% + their own Org Fit × {scoring.orgFitWeight}%</div>
-              </div>
-              <Field label="“Available for PIP” when the final score is below">
+              <Field label="PIP threshold">
                 <div className="input-group" style={{ width: 140 }}><NumInput className="input pr" value={pipBelow} onChange={setPipBelow} /><span className="addon">%</span></div>
               </Field>
             </div>
@@ -115,10 +111,10 @@ export function SetupPanel() {
           <Field label="Edit window">
             <div className="input-group" style={{ maxWidth: 170 }}><NumInput className="input pr" value={days} min={1} onChange={setDays} /><span className="addon">days</span></div>
           </Field>
-          <Field label="“Has not updated” after">
+          <Field label="Overdue after">
             <div className="input-group" style={{ maxWidth: 170 }}><NumInput className="input pr" value={staleDays} min={1} onChange={setStaleDays} /><span className="addon">days</span></div>
           </Field>
-          <Field label="Partial-completion presets">
+          <Field label="Partial-completion presets" group>
             <div className="row wrap gap-6">
               {presets.map((p) => <span key={p} className="chip">{p}%<button onClick={() => setPresets(presets.filter((x) => x !== p))} aria-label={`Remove ${p}%`}><X size={12} /></button></span>)}
               <div className="input-group" style={{ width: 96 }}><NumInput className="input sm pr" value={newPreset} onChange={setNewPreset} placeholder="90" /><span className="addon">%</span></div>

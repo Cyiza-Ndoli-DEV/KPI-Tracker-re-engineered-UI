@@ -30,8 +30,9 @@ export const defaultRatingCategories = {
 export const defaultRatingSetup = { enabled: false, startDate: '', endDate: '', categories: defaultRatingCategories }
 
 const ratingCalendar = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Africa/Kampala', dateStyle: 'short' })
+export const ratingDate = () => ratingCalendar.format(new Date())
 
-export function ratingStatus(setup, date = ratingCalendar.format(new Date())) {
+export function ratingStatus(setup, date = ratingDate()) {
   if (!setup.enabled) return 'Off'
   if (setup.startDate && date < setup.startDate) return 'Scheduled'
   if (setup.endDate && date > setup.endDate) return 'Closed'
@@ -45,6 +46,23 @@ export function ratingCategoryType(key, category) {
 export function ratingSection(setup, section) {
   const key = section === 'keeperSelf' ? 'keeperLead' : section.split(':')[0]
   return setup.categories[key]
+}
+
+export function ratingHistory(state, cycleId) {
+  if (state.orgFitRatingHistory?.[cycleId]) return state.orgFitRatingHistory[cycleId]
+  const setup = state.orgFitSetup?.[cycleId] ?? defaultRatingSetup
+  const snapshots = [
+    ...(state.orgFitRatingArchive?.[cycleId] ?? []),
+    { categories: setup.categories, submissions: state.orgFitSubmissions?.[cycleId] },
+  ]
+  return snapshots.flatMap(({ categories, submissions }) =>
+    Object.entries(submissions ?? {}).flatMap(([staffId, sections]) =>
+      Object.entries(sections).flatMap(([section, reviewers]) => {
+        const category = ratingSection({ categories }, section)
+        if (!category) return []
+        return Object.entries(reviewers).map(([reviewerId, ratings]) =>
+          ({ staffId, section, reviewerId, category, ratings, month: '' }))
+      })))
 }
 
 function selfSection(key) {

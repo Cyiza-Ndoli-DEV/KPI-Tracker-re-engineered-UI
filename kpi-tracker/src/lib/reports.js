@@ -70,7 +70,7 @@ export function levelRows(state, cycle, level, asOf, deptId = 'all', filter = {}
 }
 
 /** Everything about one person for the individual report: KPIs, results and how often they update. */
-export function personReport(state, cycle, staffId, asOf) {
+export function personReport(state, cycle, staffId, asOf, { ownOnly = false } = {}) {
   const items = unitAllocations(state, 'individual', staffId, cycle.id).map((it) => {
     const d = itemDetail(state, it, asOf)
     const ups = allocationUpdates(state, it.alloc.id).filter((u) => u.date <= asOf)
@@ -85,7 +85,7 @@ export function personReport(state, cycle, staffId, asOf) {
       return { u, kpi: it.kpi, goal: it.goal, total: it.kpi.type === 'sum' ? total : u.value }
     })
   }).sort((a, b) => b.u.date.localeCompare(a.u.date) || b.u.submittedAt.localeCompare(a.u.submittedAt))
-  return { items, records, score: personScore(state, staffId, cycle.id, {}, asOf) }
+  return { items, records, score: personScore(state, staffId, cycle.id, { ownOnly }, asOf) }
 }
 
 /** Every KPI of the cycle with its progress and how much of it is shared down. */

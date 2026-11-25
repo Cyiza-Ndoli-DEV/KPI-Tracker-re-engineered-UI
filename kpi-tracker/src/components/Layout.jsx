@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LayoutDashboard, CalendarRange, Target, Wand2, FileClock, UserCheck, Trophy, Settings, Gauge, BarChart3, CalendarDays, ArrowLeft, AlignLeft, CircleUserRound, Power, User, HeartHandshake } from 'lucide-react'
+import { LayoutDashboard, CalendarRange, Target, Wand2, FileClock, UserCheck, Settings, Gauge, BarChart3, CalendarDays, ArrowLeft, AlignLeft, CircleUserRound, Power, User, HeartHandshake } from 'lucide-react'
 import { useStore, useCurrentUser, currentUserId } from '../store'
 import { ROLES } from '../data/seed'
 import { Link, navigate, useFeedback } from './ui'
@@ -14,16 +14,14 @@ export const NAV = [
   { to: '/wizard', label: 'Goal Setup Wizard', icon: Wand2, roles: ['admin'] },
   { to: '/drafts', label: 'Drafts', icon: FileClock, roles: ['admin'], count: 'drafts' },
   { to: '/my-kpis', label: 'My KPIs', icon: UserCheck, roles: 'all' },
-  { to: '/reports', label: 'Reports', icon: BarChart3, roles: ['admin', 'dept_head', 'team_lead'] },
-  // managers find rankings inside Reports; employees keep the stand-alone page
-  { to: '/rankings', label: 'Rankings', icon: Trophy, roles: 'all', menuRoles: ['employee', 'employee2'] },
+  { to: '/reports', label: 'Reports', icon: BarChart3, roles: 'all' },
   { to: '/org-fit', label: 'Ratings', icon: HeartHandshake, roles: 'all' },
   { to: '/admin', label: 'Admin Settings', icon: Settings, roles: ['admin'], count: 'requests' },
 ]
 
 export const allowed = (item, role) => !item.roles || item.roles === 'all' || item.roles.includes(role)
 
-const PAGE_LABEL = { '': 'Dashboard', cycles: 'Review Cycles', goals: 'Goals', kpis: 'KPIs', wizard: 'Goal Setup Wizard', drafts: 'Drafts', 'my-kpis': 'My KPIs', rankings: 'Rankings', reports: 'Reports', admin: 'Admin Settings' }
+const PAGE_LABEL = { '': 'Dashboard', cycles: 'Review Cycles', goals: 'Goals', kpis: 'KPIs', wizard: 'Goal Setup Wizard', drafts: 'Drafts', 'my-kpis': 'My KPIs', rankings: 'Reports', reports: 'Reports', admin: 'Admin Settings' }
 
 export default function Layout({ route, children }) {
   const { state, setDemoUser, setViewCycle } = useStore()
@@ -34,7 +32,8 @@ export default function Layout({ route, children }) {
     drafts: state.drafts.length,
     requests: state.editRequests.filter((r) => r.status === 'pending').length,
   }
-  const isActive = (to) => (to === '/' ? route.path === '/' : route.path.startsWith(to))
+  const isActive = (to) => to === '/' ? route.path === '/' : route.path.startsWith(to) ||
+    (to === '/reports' && route.parts[0] === 'rankings')
   const first = route.parts[0] || ''
   const ratingsLabel = state.role === 'admin' ? 'Organizational Fit' : 'Ratings'
 
@@ -68,7 +67,7 @@ export default function Layout({ route, children }) {
               </div>
             </div>
             <nav className="hr-nav">
-              {NAV.filter((n) => allowed(n, state.role) && (!n.menuRoles || n.menuRoles.includes(state.role))).map((n) => (
+              {NAV.filter((n) => allowed(n, state.role)).map((n) => (
                 <Link key={n.to} to={n.to} className={`hr-nav-item ${isActive(n.to) ? 'active' : ''}`}>
                   <n.icon size={17} />
                   <span>{n.to === '/org-fit' ? ratingsLabel : n.label}</span>

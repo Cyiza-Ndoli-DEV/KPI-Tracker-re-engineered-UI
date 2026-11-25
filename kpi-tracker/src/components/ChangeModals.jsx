@@ -1,6 +1,6 @@
 // Changes to running work: a person leaving / moving / taken off a KPI, and editing running goals, KPIs and shares.
 import { useMemo, useState } from 'react'
-import { UserMinus, PencilLine, Plus, Trash2, Split, Info, ArrowRight } from 'lucide-react'
+import { UserMinus, PencilLine, Plus, Trash2, Split, ArrowRight } from 'lucide-react'
 import { useStore } from '../store'
 import { Modal, Field, NumInput, Seg, Alert, Avatar, Badge, useFeedback, navigate } from './ui'
 import { valueLabel } from './KpiWidgets'
@@ -104,7 +104,7 @@ export function LeaverModal({ staffId: presetStaff, allocId, onClose }) {
       }
     >
       <div className="grid" style={{ gridTemplateColumns: 'minmax(0,1.2fr) minmax(0,1fr) minmax(0,0.8fr)' }}>
-        <Field label="Person" required>
+        <Field label="Person" group={Boolean(presetStaff)} required>
           {presetStaff ? (
             <div className="row gap-6" style={{ minHeight: 40 }}><Avatar name={person?.name} size="sm" /><div><div className="semi">{person?.name}</div><div className="tiny muted">{person?.title}</div></div></div>
           ) : (
@@ -114,10 +114,10 @@ export function LeaverModal({ staffId: presetStaff, allocId, onClose }) {
             </select>
           )}
         </Field>
-        <Field label="What happened" required>
+        <Field label="What happened" group required>
           <Seg value={reason} onChange={setReason} options={REASONS.filter((r) => r.value !== 'removed' || allocId).map((r) => ({ value: r.value, label: r.label }))} />
         </Field>
-        <Field label="Last day" required hint={latest ? `Last result: ${fmtDate(latest)}` : 'No results yet'}>
+        <Field label="Last day" required>
           <input type="date" className="input" value={date} min={latest} max={todayISO()} onChange={(e) => setDate(e.target.value)} />
         </Field>
       </div>
@@ -127,7 +127,7 @@ export function LeaverModal({ staffId: presetStaff, allocId, onClose }) {
 
       {person && plans.length > 0 && (
         <div className="col gap-12 mt-16">
-          <div className="small semi">{plans.length} KPI share{plans.length > 1 ? 's' : ''} to close. Choose what happens to the unfinished part of each:</div>
+          <div className="small semi">KPI shares to close ({plans.length})</div>
           {plans.map((p) => (
             <div key={p.a.id} className="card">
               <div className="card-head" style={{ flexWrap: 'wrap', gap: 8 }}>
@@ -245,7 +245,7 @@ export function EditGoalModal({ goal, onClose }) {
         <Field label="Description"><textarea className="textarea" value={f.description} onChange={(ev) => setF({ ...f, description: ev.target.value })} /></Field>
         <div className="grid g-2">
           <Field label="Start date"><input type="date" className="input" disabled={started} value={f.startDate} min={cycle.startDate} max={f.endDate} onChange={(ev) => setF({ ...f, startDate: ev.target.value })} /></Field>
-          <Field label="End date" error={e('endDate')} hint={lastResult ? `Latest result ${fmtDate(lastResult)}` : undefined}><input type="date" className="input" value={f.endDate} min={minEnd} max={cycle.endDate} onChange={(ev) => setF({ ...f, endDate: ev.target.value })} /></Field>
+          <Field label="End date" error={e('endDate')}><input type="date" className="input" value={f.endDate} min={minEnd} max={cycle.endDate} onChange={(ev) => setF({ ...f, endDate: ev.target.value })} /></Field>
         </div>
         <Field label="Goal type"><input className="input" disabled value={KPI_TYPES[goal.type].label} /></Field>
         {shortened.length > 0 && <Alert tone="warn">{shortened.map((k) => k.name).join(', ')} will also end on {fmtDate(f.endDate)} (KPIs never run past their goal).</Alert>}
@@ -256,11 +256,11 @@ export function EditGoalModal({ goal, onClose }) {
 }
 
 // shared: KPI weights inside a goal
-function WeightsEditor({ rows, weights, setWeights, error, inside = false }) {
+function WeightsEditor({ rows, weights, setWeights, error, stacked = false }) {
   const total = sum(rows.map((r) => Number(weights[r.id]) || 0))
   return (
     <div>
-      <div className="row mb-8"><span className="label spacer">Contribution to the goal{!inside && " (must add up to 100%)"}</span><Badge tone={Math.abs(total - 100) < 0.05 ? 'green' : 'red'}>Total {round(total, 2)}%</Badge>
+      <div className="row mb-8"><span className="label spacer">Contribution to the goal{!stacked && " (must add up to 100%)"}</span><Badge tone={Math.abs(total - 100) < 0.05 ? 'green' : 'red'}>Total {round(total, 2)}%</Badge>
         <button className="btn ghost xs" onClick={() => setWeights(Object.fromEntries(rows.map((r) => [r.id, round(100 / rows.length, 2)])))}>Split equally</button></div>
       <div className="col gap-6">
         {rows.map((r) => {
@@ -270,7 +270,7 @@ function WeightsEditor({ rows, weights, setWeights, error, inside = false }) {
               <span className="addon" aria-hidden="true">%</span>
             </div>
           )
-          if (inside) return <Field key={r.id} inside label={r.name}>{control}</Field>
+          if (stacked) return <Field key={r.id} label={r.name}>{control}</Field>
           return (
             <div key={r.id} className="row small">
               <span className="spacer">{r.name}{r.isNew && <Badge tone="green">new</Badge>}</span>
@@ -409,25 +409,25 @@ export function AddKpiModal({ goal, onClose }) {
       footer={<><button className="btn secondary" onClick={onClose}>Cancel</button><button className="btn primary" onClick={save}><Plus size={16} /> Add KPI</button></>}>
       <div className="grid" style={{ gridTemplateColumns: 'minmax(0,1.3fr) minmax(0,1fr)', alignItems: 'start' }}>
         <div className="col gap-12">
-          <Field inside label="KPI name" required error={e('name')}><input className="input" autoFocus value={f.name} onChange={(ev) => setF({ ...f, name: ev.target.value })} /></Field>
+          <Field label="KPI name" required error={e('name')}><input className="input" autoFocus value={f.name} onChange={(ev) => setF({ ...f, name: ev.target.value })} /></Field>
           <div className="grid g-2">
-            <Field inside label="Type"><input className="input" disabled value={KPI_TYPES[goal.type].label} /></Field>
-            <Field inside label="Unit"><select className="select" disabled={f.type === 'completion'} value={f.unit} onChange={(ev) => setF({ ...f, unit: ev.target.value })}>{UNITS.map((u) => <option key={u}>{u}</option>)}</select></Field>
+            <Field label="Type"><input className="input" disabled value={KPI_TYPES[goal.type].label} /></Field>
+            <Field label="Unit"><select className="select" disabled={f.type === 'completion'} value={f.unit} onChange={(ev) => setF({ ...f, unit: ev.target.value })}>{UNITS.map((u) => <option key={u}>{u}</option>)}</select></Field>
           </div>
           {f.type !== 'completion' && (
             <div className="grid g-2">
-              {f.type === 'average' && <Field inside label="Start value"><NumInput className="input" value={f.startValue} onChange={(v) => setF({ ...f, startValue: v })} /></Field>}
-              <Field inside label="Organization target" required error={e('target')}><NumInput className="input" value={f.target} onChange={(v) => setF({ ...f, target: v })} /></Field>
+              {f.type === 'average' && <Field label="Start value"><NumInput className="input" value={f.startValue} onChange={(v) => setF({ ...f, startValue: v })} /></Field>}
+              <Field label="Organization target" required error={e('target')}><NumInput className="input" value={f.target} onChange={(v) => setF({ ...f, target: v })} /></Field>
             </div>
           )}
           <div className="grid g-2">
-            <Field inside label="Start" error={e('dates')}><input type="date" className="input" value={f.startDate} min={goal.startDate} max={goal.endDate} onChange={(ev) => setF({ ...f, startDate: ev.target.value })} /></Field>
-            <Field inside label="End"><input type="date" className="input" value={f.endDate} min={f.startDate} max={goal.endDate} onChange={(ev) => setF({ ...f, endDate: ev.target.value })} /></Field>
+            <Field label="Start" error={e('dates')}><input type="date" className="input" value={f.startDate} min={goal.startDate} max={goal.endDate} onChange={(ev) => setF({ ...f, startDate: ev.target.value })} /></Field>
+            <Field label="End"><input type="date" className="input" value={f.endDate} min={f.startDate} max={goal.endDate} onChange={(ev) => setF({ ...f, endDate: ev.target.value })} /></Field>
           </div>
         </div>
         <div className="col gap-12">
-          <WeightsEditor rows={all} weights={weights} setWeights={setWeights} error={e('weights')} inside />
-          <Field inside label="Reason" required={goal.status === 'running'} error={e('reason')}><textarea className="textarea" value={reason} onChange={(ev) => setReason(ev.target.value)} /></Field>
+          <WeightsEditor rows={all} weights={weights} setWeights={setWeights} error={e('weights')} stacked />
+          <Field label="Reason" required={goal.status === 'running'} error={e('reason')}><textarea className="textarea" value={reason} onChange={(ev) => setReason(ev.target.value)} /></Field>
         </div>
       </div>
     </Modal>
@@ -533,7 +533,6 @@ export function EditSharesModal({ kpi, parent, onClose }) {
         {addable.filter((u) => !added.some((x) => x.unitId === u.unitId)).map((u) => (
           <button key={u.unitId} className="btn soft sm" onClick={() => setAdded([...added, { ...u, percent: isSum ? round(Math.max(0, 100 - total), 2) : null, joinedDate: todayISO() }])}><Plus size={14} /> Add {u.name}</button>
         ))}
-        {parent && parent.level !== 'department' && <span className="tiny muted"><Info size={12} /> To add a person use <b>Add member</b>; to take someone off use <b>Remove</b> on their row.</span>}
       </div>
       <Field label="Reason" required style={{ marginTop: 14 }} error={tried && !reason.trim() ? 'Required' : undefined}><input className="input" value={reason} onChange={(ev) => setReason(ev.target.value)} /></Field>
     </Modal>

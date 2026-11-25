@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { createSeed, ROLES } from './data/seed'
 import { uid, nowISO, todayISO, minISO, addDays, round, sum } from './lib/utils'
 import { byId, currentPeriod, childAllocations, allocationUpdates, unitName, kpiPeriods, cumulativeAt } from './lib/calc'
-import { assignedRatingSections, changedRatingSections, criterionPoints, defaultRatingSetup, fitPoints, ratingSection, ratingSetupError, ratingStatus, validRatings } from './lib/orgFit'
+import { assignedRatingSections, changedRatingSections, criterionPoints, defaultRatingSetup, fitPoints, ratingDate, ratingHistory, ratingSection, ratingSetupError, ratingStatus, validRatings } from './lib/orgFit'
 import { commitDraftToEntities, draftFromGoal } from './lib/draft'
 
 const VERSION = 9
@@ -124,14 +124,30 @@ export function StoreProvider({ children }) {
         const employee = byId(n.staff, staffId)
         const cycle = byId(n.cycles, cycleId)
         const setup = n.orgFitSetup?.[cycleId] ?? defaultRatingSetup
-        if (n.role === 'admin' || !cycle || ratingStatus(setup) !== 'Open' || !assignedRatingSections(setup, n, reviewer, employee).includes(section) ||
+        const date = ratingDate()
+        if (n.role === 'admin' || !cycle || ratingStatus(setup, date) !== 'Open' || !assignedRatingSections(setup, n, reviewer, employee).includes(section) ||
             !validRatings(setup, section, row)) return
+
+        const month = date.slice(0, 7)
+        const category = ratingSection(setup, section)
+        const history = ratingHistory(n, cycleId)
+        const criteria = JSON.stringify(category.dimensions.map(([name]) => name))
+        const index = history.findIndex((entry) => entry.month === month && entry.staffId === staffId &&
+          entry.section === section && entry.reviewerId === reviewerId &&
+          JSON.stringify(entry.category.dimensions.map(([name]) => name)) === criteria)
+        const current = n.orgFitSubmissions?.[cycleId]?.[staffId]?.[section]?.[reviewerId]
+        if (index >= 0 && JSON.stringify(history[index].ratings) === JSON.stringify(row) &&
+          JSON.stringify(current) === JSON.stringify(row)) return
+        const entry = { month, staffId, section, reviewerId, category: structuredClone(category), ratings: row.slice() }
+        if (index >= 0) history[index] = entry
+        else history.push(entry)
+        n.orgFitRatingHistory ??= {}
+        n.orgFitRatingHistory[cycleId] = history
 
         n.orgFitSubmissions ??= {}
         const cycleSubmissions = n.orgFitSubmissions[cycleId] ??= {}
         const submissions = cycleSubmissions[staffId] ??= {}
         const reviewers = submissions[section] ??= {}
-        if (JSON.stringify(reviewers[reviewerId]) === JSON.stringify(row)) return
 
         reviewers[reviewerId] = row.slice()
         const points = fitPoints(setup, submissions, staffId)
@@ -189,6 +205,7 @@ export function StoreProvider({ children }) {
         n.goals = n.goals.filter((g) => !goalIds.has(g.id))
         n.drafts = n.drafts.filter((d) => d.cycleId !== id)
         n.cycles = n.cycles.filter((x) => x.id !== id)
+        if (n.orgFitRatingHistory) delete n.orgFitRatingHistory[id]
         if (n.viewCycleId === id) n.viewCycleId = (n.cycles.find((x) => x.status === 'active') || [...n.cycles].sort((a, b) => b.startDate.localeCompare(a.startDate))[0])?.id
         log(n, { action: 'Cycle deleted', subject: c.name, oldValue: `${c.status}; ${goalIds.size} goal(s), ${kpiIds.size} KPI(s), ${shares} share(s), ${updIds.size} result(s), ${drafts} draft(s)`, newValue: 'Deleted', note: reason })
       }),

@@ -1,8 +1,9 @@
 // Individual performance report: one person's KPIs, how they performed, and how often they update.
 import { useState } from 'react'
 import { Download, ListChecks, LineChart as LineIcon, Users, Gauge, CalendarClock, LifeBuoy } from 'lucide-react'
-import { useStore } from '../store'
-import { BackLink, Badge, Avatar, Progress, Empty, Link, Seg, toneFor, useFeedback, navigate, PctBar, ScoreTile } from '../components/ui'
+import { currentUserId, useStore } from '../store'
+import { isEmployeeRole } from '../data/seed'
+import { BackLink, Badge, Avatar, Empty, Field, Link, Seg, useFeedback, navigate, PctBar, ScoreTile } from '../components/ui'
 import { valueLabel, LineChart } from '../components/KpiWidgets'
 import CountChart from '../components/CountChart'
 import { byId, band, progressSeries, teamMembersOf, personScore, KPI_TYPES } from '../lib/calc'
@@ -18,9 +19,13 @@ export default function PersonReport({ id }) {
   const asOf = reportDefaultAsOf(cycle, todayISO())
   const [kpiSel, setKpiSel] = useState('')
   const [freqBy, setFreqBy] = useState('week')
-  if (!person) return <Empty title="Person not found" action={<Link to="/reports?tab=individuals" className="btn primary">Back to reports</Link>} />
+  const ownOnly = isEmployeeRole(state.role)
+  const backTo = ownOnly ? '/reports' : '/reports?tab=individuals'
+  if (!person || (ownOnly && id !== currentUserId(state))) {
+    return <Empty title="Report unavailable" action={<Link to={backTo} className="btn primary">Back to reports</Link>} />
+  }
 
-  const rep = personReport(state, cycle, id, asOf)
+  const rep = personReport(state, cycle, id, asOf, { ownOnly })
   const sc = rep.score
   const b = sc.final === null ? null : band(state, sc.final)
   const pip = sc.final !== null && sc.final < (state.settings.pipBelow ?? 50)
@@ -45,20 +50,20 @@ export default function PersonReport({ id }) {
   return (
     <div className="col gap-16">
       <div>
-        <BackLink to="/reports?tab=individuals" label="Reports · Individuals" />
+        {!ownOnly && <BackLink to={backTo} label="Reports · Individuals" />}
         <div className="card card-pad">
           <div className="row top wrap gap-20">
-            <ScoreTile value={sc.final ?? 0} label="final score" width={100} />
+            {!ownOnly && <ScoreTile value={sc.final ?? 0} label="final score" width={100} />}
             <div style={{ flex: 1, minWidth: 320 }}>
               <div className="row wrap gap-6 mb-8">
-                <Badge tone="blue">Individual performance report</Badge>
+                <Badge tone="blue">{ownOnly ? 'My performance report' : 'Individual performance report'}</Badge>
                 {sc.isLead && <Badge tone="violet">Team lead</Badge>}
                 {b && <Badge tone={b.tone}>{b.label}</Badge>}
                 {pip && <Badge tone="red"><LifeBuoy size={11} /> Available for PIP</Badge>}
               </div>
               <div className="row gap-10">
                 <Avatar name={person.name} />
-                <div><h1 style={{ fontSize: 22 }}>{person.name}</h1><div className="small muted">{person.title} · {byId(state.departments, person.departmentId)?.name}{person.teamId ? ` · ${byId(state.teams, person.teamId)?.name}` : ' · no team'} · {cycle.name}, as of {fmtDate(asOf)}</div></div>
+                <div><h1 style={{ fontSize: 22 }}>{person.name}</h1><div className="small muted">{person.title}{!ownOnly && <> · {byId(state.departments, person.departmentId)?.name}{person.teamId ? ` · ${byId(state.teams, person.teamId)?.name}` : ' · no team'}</>} · {cycle.name}, as of {fmtDate(asOf)}</div></div>
               </div>
               <div className="kv-grid mt-16">
                 <div><div className="k">{sc.isLead ? "KPI part (team members' average)" : 'KPI score (average)'}</div><div className="v">{fmtPct(sc.kpiPart, 1)}</div></div>
@@ -70,9 +75,8 @@ export default function PersonReport({ id }) {
                 <div><div className="k">Last result</div><div className="v">{lastAll ? fmtDate(lastAll) : 'never'}</div></div>
                 <div><div className="k">Updates every</div><div className="v">{gaps.length ? `${round(gaps.reduce((a, c) => a + c, 0) / gaps.length, 0)} days on average` : '—'}</div></div>
               </div>
-              <div className="tiny muted mt-8">Final = {sc.isLead ? "team members' KPI average" : 'KPI average'} × {sc.weights.kpiWeight}% + Org Fit × {sc.weights.orgFitWeight}%</div>
             </div>
-            <button className="btn primary" onClick={() => { exportPersonReport(state, cycle, person, asOf); toast(`Report for ${person.name} exported.`) }}><Download size={16} /> Export report</button>
+            <button className="btn primary" onClick={() => { exportPersonReport(state, cycle, person, asOf, { ownOnly }); toast(`Report for ${person.name} exported.`) }}><Download size={16} /> Export report</button>
           </div>
         </div>
       </div>
@@ -82,17 +86,14 @@ export default function PersonReport({ id }) {
         {rep.items.length === 0 ? <Empty title={`${person.name} holds no KPI in ${cycle.name}`} /> : (
           <div className="scroll-x">
             <table className="table">
-              <thead><tr><th>Goal → KPI</th><th className="right">Target</th><th className="right">Actual</th><th>Achieved</th><th className="right">Results</th><th className="right">Updates every</th><th className="right">Last result</th></tr></thead>
+              <thead><tr><th>{ownOnly ? 'KPI' : 'Goal → KPI'}</th><th className="right">Target</th><th className="right">Actual</th><th>Achieved</th></tr></thead>
               <tbody>
                 {[...rep.items].sort((a, c) => a.stats.progress - c.stats.progress).map((it, i) => (
-                  <tr key={it.alloc.id} className="clickable" onClick={() => navigate(`/kpis/${it.kpi.id}/${it.alloc.id}`)}>
-                    <td><div className="tiny muted">{it.goal.name}</div><div className="semi small">{it.kpi.name} <span className="tiny muted">· {KPI_TYPES[it.kpi.type].label}</span> {i === 0 && rep.items.length > 1 && <Badge tone="red">weakest</Badge>}</div></td>
+                  <tr key={it.alloc.id} className={ownOnly ? undefined : 'clickable'} onClick={ownOnly ? undefined : () => navigate(`/kpis/${it.kpi.id}/${it.alloc.id}`)}>
+                    <td>{!ownOnly && <div className="tiny muted">{it.goal.name}</div>}<div className="semi small">{it.kpi.name} <span className="tiny muted">· {KPI_TYPES[it.kpi.type].label}</span> {i === 0 && rep.items.length > 1 && <Badge tone="red">weakest</Badge>}</div></td>
                     <td className="right mono small">{it.kpi.type === 'completion' ? 'Full' : valueLabel(it.kpi, it.stats.target)}</td>
                     <td className="right mono small bold">{valueLabel(it.kpi, it.stats.current)}</td>
                     <td><PctBar value={it.stats.progress} /></td>
-                    <td className="right mono small">{it.count}</td>
-                    <td className="right small">{it.avgGap === null ? '—' : `${round(it.avgGap, 0)} days`}</td>
-                    <td className="right small">{it.last ? fmtShortDate(it.last) : <span className="badge red">never</span>}{it.since !== null && it.since > (state.settings.staleDays ?? 30) && <div><span className="badge amber" style={{ padding: '0 6px' }}>{it.since}d ago</span></div>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -105,7 +106,9 @@ export default function PersonReport({ id }) {
         <div className="grid g-2" style={{ alignItems: 'start' }}>
           <div className="card">
             <div className="card-head wrap"><LineIcon size={18} color="var(--blue-600)" /><h3>Progress over time</h3><div className="spacer" />
-              <select className="select sm" style={{ width: 'auto' }} value={sel.alloc.id} onChange={(e) => setKpiSel(e.target.value)}>{rep.items.map((it) => <option key={it.alloc.id} value={it.alloc.id}>{it.kpi.name}</option>)}</select>
+              <Field label="KPI">
+                <select className="select sm" value={sel.alloc.id} onChange={(e) => setKpiSel(e.target.value)}>{rep.items.map((it) => <option key={it.alloc.id} value={it.alloc.id}>{it.kpi.name}</option>)}</select>
+              </Field>
             </div>
             <div className="card-body"><LineChart points={progressSeries(state, sel.kpi, sel.period, sel.alloc)} start={sel.period.startDate} end={sel.period.endDate} height={200} /></div>
           </div>

@@ -1,8 +1,8 @@
 import { currentUserId, useStore } from '../store'
 import { useEffect, useState } from 'react'
-import { CalendarClock, Lock, PencilLine, Search, Star, Trash2, Users } from 'lucide-react'
-import { Avatar, Badge, Modal, ScoreDot, useFeedback } from '../components/ui'
-import { assignedRatingSections, changedRatingSections, criterionPoints, defaultRatingSetup, ratingCategoryType, ratingSection, ratingSetupError, ratingStatus, starPoints, validRatings } from '../lib/orgFit'
+import { CalendarClock, PencilLine, Star, Trash2, Users } from 'lucide-react'
+import { Avatar, Badge, Field, Modal, ScoreDot, Tabs, useFeedback } from '../components/ui'
+import { assignedRatingSections, changedRatingSections, criterionPoints, defaultRatingSetup, ratingCategoryType, ratingHistory, ratingSection, ratingSetupError, ratingStatus, starPoints, validRatings } from '../lib/orgFit'
 import { band, byId, personScore } from '../lib/calc'
 import { fmtDate, uid } from '../lib/utils'
 
@@ -32,13 +32,6 @@ export default function OrgFit() {
   )
 }
 
-function ratingWindow(setup, status) {
-  if (status === 'Off') return 'You can submit or edit ratings when your administrator turns submissions on.'
-  if (status === 'Scheduled') return 'Ratings open on ' + fmtDate(setup.startDate) + '.'
-  if (status === 'Closed') return 'Ratings closed on ' + fmtDate(setup.endDate) + '.'
-  return setup.endDate ? 'Ratings are open through ' + fmtDate(setup.endDate) + '.' : 'Rating submissions are open.'
-}
-
 const adminTabs = ['Categories', 'Schedule', 'Scores']
 
 function AdminRatings({ cycle, setup, status }) {
@@ -51,7 +44,7 @@ function AdminRatings({ cycle, setup, status }) {
       </nav>
       {tab === 'Categories' && <RatingCategories cycle={cycle} setup={setup} />}
       {tab === 'Schedule' && <RatingSetup cycle={cycle} saved={setup} status={status} />}
-      {tab === 'Scores' && <OrgFitPanel cycle={cycle} setup={setup} />}
+      {tab === 'Scores' && <OrgFitPanel cycle={cycle} />}
     </>
   )
 }
@@ -101,7 +94,7 @@ function RatingCategories({ cycle, setup }) {
             </div></td>
           </tr>
         ))}</tbody>
-      </table></div> : <p className="rating-availability muted">No rating categories. Add a category to get started.</p>}
+      </table></div> : <p className="rating-availability muted">No rating categories</p>}
       {editor && <CategoryEditor setup={setup} editor={editor} hasRatings={hasRatings} onClose={() => setEditor(null)}
         onSave={(next) => save(next, 'Rating category saved')} />}
       {deleting && <Modal title={'Delete ' + setup.categories[deleting].name + '?'} onClose={() => setDeleting(null)} footer={
@@ -203,16 +196,20 @@ function RatingSetup({ cycle, saved, status }) {
             onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} />
         </label>
         <div className="rating-schedule-dates">
-          <label className="rating-date" data-empty={!draft.startDate}>
-            <input aria-label="Start date" className="input" type="date" name="startDate" value={draft.startDate}
-              onChange={(event) => setDraft({ ...draft, startDate: event.target.value })} />
-            <span className="rating-date-placeholder" aria-hidden="true">Start date</span>
-          </label>
-          <label className="rating-date" data-empty={!draft.endDate}>
-            <input aria-label="End date" className="input" type="date" name="endDate" value={draft.endDate} aria-invalid={Boolean(error)}
-              aria-describedby={error ? 'rating-schedule-error' : undefined} onChange={(event) => setDraft({ ...draft, endDate: event.target.value })} />
-            <span className="rating-date-placeholder" aria-hidden="true">End date</span>
-          </label>
+          <Field label="Start date" htmlFor="rating-start-date">
+            <div className="rating-date-input" data-empty={!draft.startDate}>
+              <input id="rating-start-date" className="input" type="date" name="startDate" value={draft.startDate}
+                onChange={(event) => setDraft({ ...draft, startDate: event.target.value })} />
+              <span aria-hidden="true">Start date</span>
+            </div>
+          </Field>
+          <Field label="End date" htmlFor="rating-end-date">
+            <div className="rating-date-input" data-empty={!draft.endDate}>
+              <input id="rating-end-date" className="input" type="date" name="endDate" value={draft.endDate} aria-invalid={Boolean(error)}
+                aria-describedby={error ? 'rating-schedule-error' : undefined} onChange={(event) => setDraft({ ...draft, endDate: event.target.value })} />
+              <span aria-hidden="true">End date</span>
+            </div>
+          </Field>
         </div>
         {error && <p className="small rating-schedule-error" id="rating-schedule-error" role="alert">{error}</p>}
       </div>
@@ -223,17 +220,55 @@ function RatingSetup({ cycle, saved, status }) {
   )
 }
 
-function OrgFitPanel({ cycle, setup }) {
+const monthFormat = new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+const monthLabel = (month) => month ? monthFormat.format(new Date(month + '-01T00:00:00Z')) : 'Undated ratings'
+
+function OrgFitPanel({ cycle }) {
   const { state } = useStore()
   const [q, setQ] = useState('')
+  const [month, setMonth] = useState('all')
+  const [department, setDepartment] = useState('all')
+  const [team, setTeam] = useState('all')
+  const [submission, setSubmission] = useState('all')
   const [selected, setSelected] = useState(null)
-  const people = state.staff.filter((s) => s.active !== false && s.departmentId && s.name.toLowerCase().includes(q.trim().toLowerCase()))
+  const history = ratingHistory(state, cycle.id)
+  const months = [...new Set(history.map((entry) => entry.month))].sort().reverse()
+  const ratings = month === 'all' ? history : history.filter((entry) => entry.month === month)
+  const ratedPeople = new Set(ratings.map((entry) => entry.staffId))
+  const teams = state.teams.filter((t) => department === 'all' || t.departmentId === department)
+  const search = q.trim().toLowerCase()
+  const people = state.staff.filter((s) => {
+    const rated = ratedPeople.has(s.id)
+    if (!rated && (month !== 'all' || s.active === false || !s.departmentId)) return false
+    if (department !== 'all' && s.departmentId !== department) return false
+    if (team !== 'all' && s.teamId !== team) return false
+    if (month === 'all' && submission !== 'all' && rated !== (submission === 'submitted')) return false
+    return [s.name, s.title].some((value) => value?.toLowerCase().includes(search))
+  })
   return (
     <div className="card">
       <div className="card-head">
         <Users size={18} color="var(--blue-600)" /><h3>Organizational Fit scores · {cycle.name}</h3>
-        <div className="spacer" />
-        <div className="input-group" style={{ width: 200 }}><Search size={14} style={{ position: 'absolute', left: 10, color: 'var(--muted)' }} /><input className="input sm" style={{ paddingLeft: 30 }} placeholder="Search person" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+      </div>
+      <div className="card-pad row wrap gap-12">
+        <label className="filter-field">Rating month<select className="select" value={month} onChange={(e) => setMonth(e.target.value)}>
+          <option value="all">All months</option>
+          {months.map((value) => <option key={value} value={value}>{monthLabel(value)}</option>)}
+        </select></label>
+        <label className="filter-field">Department<select className="select" value={department} onChange={(e) => { setDepartment(e.target.value); setTeam('all') }}>
+          <option value="all">All departments</option>
+          {state.departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+        </select></label>
+        <label className="filter-field">Team<select className="select" value={team} onChange={(e) => setTeam(e.target.value)}>
+          <option value="all">All teams</option>
+          {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+        </select></label>
+        {month === 'all' && <label className="filter-field">Rating submissions<select className="select" value={submission} onChange={(e) => setSubmission(e.target.value)}>
+          <option value="all">Any status</option>
+          <option value="submitted">Has submissions</option>
+          <option value="missing">No submissions</option>
+        </select></label>}
+        <label className="filter-field">Search people<input type="search" className="input" value={q} onChange={(e) => setQ(e.target.value)} /></label>
       </div>
       <div className="scroll-x">
         <table className="table">
@@ -256,30 +291,60 @@ function OrgFitPanel({ cycle, setup }) {
           </tbody>
         </table>
       </div>
-      {selected && <RatingResults employee={selected} setup={setup}
-        submissions={state.orgFitSubmissions?.[cycle.id]?.[selected.id]} staff={state.staff}
+      {!people.length && <p className="card-pad small muted">No people match these filters.</p>}
+      {selected && <RatingResults employee={selected} month={month}
+        ratings={ratings.filter((entry) => entry.staffId === selected.id)} staff={state.staff}
         onClose={() => setSelected(null)} />}
     </div>
   )
 }
 
 
-function RatingResults({ employee, setup, submissions, staff, onClose }) {
-  const sections = Object.entries(submissions || {}).flatMap(([section, reviewers]) => {
-    const category = ratingSection(setup, section)
-    return category && Object.keys(reviewers).length ? [{ section, category, reviewers }] : []
-  })
+function RatingResults({ employee, month, ratings, staff, onClose }) {
+  const [tab, setTab] = useState('details')
+  const sections = new Map()
+  const summaries = new Map()
+  for (const entry of ratings) {
+    const { category, section } = entry
+    const key = JSON.stringify([entry.month, section, category.name, category.dimensions])
+    if (!sections.has(key)) sections.set(key, [])
+    sections.get(key).push(entry)
+    const categoryKey = section === 'keeperSelf' ? 'keeperLead' : section.split(':')[0]
+    if (!summaries.has(categoryKey)) summaries.set(categoryKey, { name: category.name, scores: [], criteria: new Map() })
+    const summary = summaries.get(categoryKey)
+    entry.ratings.forEach((stars, index) => {
+      const [name] = category.dimensions[index]
+      if (!summary.criteria.has(name)) summary.criteria.set(name, [])
+      summary.criteria.get(name).push(stars)
+      summary.scores.push(stars)
+    })
+  }
+  const average = (scores) => (scores.reduce((total, score) => total + score, 0) / scores.length).toFixed(2)
 
   return (
-    <Modal title="Rating results" sub={employee.name} size="rating-modal" onClose={onClose}
+    <Modal title="Rating results" sub={employee.name + ' · ' + (month === 'all' ? 'All months' : monthLabel(month))} size="rating-modal" onClose={onClose}
       footer={<button className="btn" onClick={onClose}>Close</button>}>
-      {sections.length ? (
+      <Tabs value={tab} onChange={setTab} tabs={[{ key: 'details', label: 'Details' }, { key: 'summary', label: 'Summary' }]} />
+      {!ratings.length ? <p className="small muted">No individual ratings have been submitted for this person.</p> : tab === 'summary' ? (
+        <div className="col gap-20 mt-12">
+          {[...summaries].map(([key, { name, scores, criteria }]) => (
+            <section key={key}>
+              <div className="rating-dimension"><h3>{name}</h3><b>{average(scores)} / 5</b></div>
+              {[...criteria].map(([criterion, values]) => (
+                <div className="rating-dimension" key={criterion}><span>{criterion}</span><span>{average(values)} / 5</span></div>
+              ))}
+            </section>
+          ))}
+        </div>
+      ) : (
         <div className="col gap-20">
-          {sections.map(({ section, category, reviewers }) => (
-            <section className="col gap-10" key={section}>
+          {[...sections].sort(([, [a]], [, [b]]) => b.month.localeCompare(a.month)).map(([key, entries]) => {
+            const { section, category, month: submittedMonth } = entries[0]
+            return <section className="col gap-10" key={key}>
+              {month === 'all' && <div className="small muted">{monthLabel(submittedMonth)}</div>}
               <h3>{category.name}{(section === 'keeperSelf' || section.endsWith(':self')) && ' self-assessment'}</h3>
-              {Object.entries(reviewers).map(([id, ratings]) => (
-                <div key={id}>
+              {entries.map(({ reviewerId: id, ratings }, index) => (
+                <div key={id + ':' + index}>
                   <div className="semi">{byId(staff, id)?.name ?? id}{id === employee.id && ' (self)'}</div>
                   {category.dimensions.map(([name], index) => {
                     const stars = ratings[index]
@@ -300,9 +365,9 @@ function RatingResults({ employee, setup, submissions, staff, onClose }) {
                 </div>
               ))}
             </section>
-          ))}
+          })}
         </div>
-      ) : <p className="small muted">No individual ratings have been submitted for this person in this cycle.</p>}
+      )}
     </Modal>
   )
 }
@@ -322,18 +387,10 @@ function PersonalRatings({ cycle, setup, status }) {
       <div className="card-head">
         <Users size={18} color="var(--blue-600)" /><h3>My rating assignments · {cycle.name}</h3>
       </div>
-      <div aria-live="polite">
-        {status === 'Open' ? (
-          <p className="rating-availability small muted">{ratingWindow(setup, status)}</p>
-        ) : (
-          <div className={'rating-status-banner' + (status === 'Scheduled' ? ' scheduled' : '')}>
-            {status === 'Scheduled' ? <CalendarClock size={20} aria-hidden="true" /> : <Lock size={20} aria-hidden="true" />}
-            <div>
-              <div className="semi">{status === 'Off' ? 'Ratings are turned off' : status === 'Scheduled' ? 'Ratings are not open yet' : 'Ratings are closed'}</div>
-              <div className="small">{ratingWindow(setup, status)}</div>
-            </div>
-          </div>
-        )}
+      <div className="rating-availability row wrap gap-12 small" aria-live="polite">
+        <Badge tone={status === 'Open' ? 'green' : status === 'Scheduled' ? 'amber' : 'gray'} dot>{status}</Badge>
+        {setup.startDate && <span>Start date {fmtDate(setup.startDate)}</span>}
+        {setup.endDate && <span>End date {fmtDate(setup.endDate)}</span>}
       </div>
       {assignments.length ? (
         <div className="scroll-x">
@@ -390,13 +447,11 @@ function RatingForm({ cycle, setup, status, assignment, onClose }) {
         }}>Submit rating</button>}
       </>
     }>
-      {!readOnly && <p className="small muted">Choose a star for each criterion.</p>}
       <div>
-        {dimensions.map(([label, description], index) => (
+        {dimensions.map(([label], index) => (
           <div className="rating-dimension" key={index}>
             <div>
               <div className="semi">{label}</div>
-              <div className="small muted">{description}</div>
             </div>
             <div>
               <div className="rating-stars rating-stars-labeled" role="radiogroup" aria-label={label}>

@@ -19,7 +19,15 @@ const clamp = (value) => Math.min(100, Math.max(0, value ?? 0))
 const money = (value) => 'UGX ' + fmtCompact(value)
 
 function Select({ label, value, onChange, children }) {
-  return <label className="pd-select"><select aria-label={label} value={value} onChange={onChange}>{children}</select><ChevronDown size={15} aria-hidden="true" /></label>
+  return (
+    <label className="field">
+      <span className="label">{label}</span>
+      <span className="pd-select">
+        <select value={value} onChange={onChange}>{children}</select>
+        <ChevronDown size={15} aria-hidden="true" />
+      </span>
+    </label>
+  )
 }
 
 function Metric({ icon: Icon, label, value, color = 'blue', children, identity }) {
@@ -147,6 +155,7 @@ export default function Dashboard() {
   const cycle = byId(state.cycles, state.viewCycleId)
   const [monthKey, setMonth] = useState('')
   const months = dashboardMonths(cycle)
+  const allMonths = monthKey === 'all'
   const month = months.find(({ key }) => key === monthKey) || months.at(-1)
   const admin = state.role === 'admin'
   const department = state.role === 'dept_head'
@@ -154,16 +163,17 @@ export default function Dashboard() {
   return <div className="pd">
     <header className="pd-page-header">
       <h1>{titles[state.role] || 'My Performance Dashboard'}</h1>
-      {month && <Select label="Reporting month" value={month.key} onChange={(e) => setMonth(e.target.value)}>
+      {month && <Select label="Reporting month" value={allMonths ? 'all' : month.key} onChange={(e) => setMonth(e.target.value)}>
+        <option value="all">All months</option>
         {months.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
       </Select>}
     </header>
-    {cycle && month ? <DashboardContent {...{ state, user, cycle, month, months, admin, department, team }} />
+    {cycle && month ? <DashboardContent {...{ state, user, cycle, month, months, allMonths, admin, department, team }} />
       : <Panel title="No review cycle yet">{admin && <Link to="/cycles/new">Create a review cycle</Link>}</Panel>}
   </div>
 }
 
-function DashboardContent({ state, user, cycle, month, months, admin, department, team }) {
+function DashboardContent({ state, user, cycle, month, months, allMonths, admin, department, team }) {
   const data = dashboardData(state, cycle)
   const managedDepartments = state.departments.filter((item) => item.headId === user.id)
   const managedTeams = state.teams.filter((item) => department ? managedDepartments.some(({ id }) => id === item.departmentId) : item.leadId === user.id)
@@ -175,11 +185,12 @@ function DashboardContent({ state, user, cycle, month, months, admin, department
   const rows = getRows(month.date)
   const score = scoreOf(rows)
   const monthIndex = months.indexOf(month)
-  const recent = months.slice(Math.max(0, monthIndex - 5), monthIndex + 1)
-  const previous = recent.at(-2)
+  const chartMonths = allMonths ? months : months.slice(Math.max(0, monthIndex - 5), monthIndex + 1)
+  const previous = allMonths ? null : chartMonths.at(-2)
+  const periodKey = allMonths ? 'all' : month.key
   const counts = { 'On track': 0, 'At risk': 0, Behind: 0 }
   for (const { stats } of rows) counts[data.status(stats.progress)]++
-  const points = admin ? [] : recent.map((item) => {
+  const points = admin ? [] : chartMonths.map((item) => {
     const rows = data.monthRows(item, ...scope)
     return { ...item, rows, value: scoreOf(rows) }
   })
@@ -206,7 +217,7 @@ function DashboardContent({ state, user, cycle, month, months, admin, department
     const revenueTotal = revenue ? data.revenueAt(revenue.kpi, month.date) : null
     const revenueTarget = revenue ? Number(revenue.kpi.target) : null
     const revenueProgress = revenueTarget > 0 ? revenueTotal / revenueTarget * 100 : null
-    const revenuePoints = recent.map((item) => {
+    const revenuePoints = chartMonths.map((item) => {
       if (!revenue) return { ...item, value: null }
       const monthly = data.monthRows(item).filter(({ kpi }) => kpi.id === revenue.kpi.id)
       return { ...item, value: monthly.length ? monthly.reduce((sum, row) => sum + row.stats.current, 0) : null, target: monthly.reduce((sum, row) => sum + row.stats.target, 0) }
@@ -219,13 +230,14 @@ function DashboardContent({ state, user, cycle, month, months, admin, department
       </div>
       <div className="pd-admin-columns">
         <div>
-          <Panel title="Monthly Revenue Performance">{revenue ? <Trend key={cycle.id + month.key} points={revenuePoints} format={(value) => fmtValue('UGX', value, false)} currency /> : <p className="pd-empty">No revenue KPI for this period.</p>}</Panel>
+          <Panel title="Monthly Revenue Performance">{revenue ? <Trend key={cycle.id + periodKey} points={revenuePoints} format={(value) => fmtValue('UGX', value, false)} currency /> : <p className="pd-empty">No revenue KPI for this period.</p>}</Panel>
           <Panel title="Department Performance">
-            <Table columns={['Department', 'KPIs', 'Achievement', 'Status', 'Trend']} rows={state.departments.map((item) => {
+            <Table columns={['Department', 'KPIs', 'Achievement', 'Status', ...(!allMonths ? ['Trend'] : [])]} rows={state.departments.map((item) => {
               const scoped = (date) => data.rows(date, 'department', [item.id])
               const current = scoped(month.date)
               const score = performance(current)
-              return [item.id, item.name, current.length, <Achievement score={score} />, <Status status={data.status(score)} />, <Change current={score} previous={previous ? performance(scoped(previous.date)) : null} month={previous} />]
+              return [item.id, item.name, current.length, <Achievement score={score} />, <Status status={data.status(score)} />,
+                ...(!allMonths ? [<Change current={score} previous={previous ? performance(scoped(previous.date)) : null} month={previous} />] : [])]
             })} />
           </Panel>
         </div>
@@ -258,7 +270,7 @@ function DashboardContent({ state, user, cycle, month, months, admin, department
     </div>
     <div className="pd-pair pd-bottom">
       <Panel title={department ? 'Performance Trend (Department)' : team ? 'Team Trend' : 'Performance Trend'}>
-        <Trend key={cycle.id + state.role + month.key} points={points} target={100} />
+        <Trend key={cycle.id + state.role + periodKey} points={points} target={100} />
       </Panel>
       {team ? <Panel title="Individual Performance (Team Members)" to="/reports?tab=individuals" link="View team details">
         <Table columns={['Team Member', 'KPI Achievement', 'Status']} rows={members.map((person) => {

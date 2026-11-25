@@ -111,7 +111,7 @@ export default function KpiNodeDetail({ kpiId, allocId }) {
       </div>
 
       <div className="card">
-        <div className="card-head"><GitBranch size={18} color="var(--blue-600)" /><h3>Where this KPI sits</h3><span className="small muted">from the goal down to {owner.name}{n.children.length ? ' and the KPIs below it' : ''}. Click a row to open it.</span></div>
+        <div className="card-head"><GitBranch size={18} color="var(--blue-600)" /><h3>KPI hierarchy</h3></div>
         <div className="card-body col gap-6">
           <div className="chain-row goal" onClick={() => navigate(`/goals/${goal.id}`)}>
             <span className="lvl kpi"><Gauge size={13} /></span>

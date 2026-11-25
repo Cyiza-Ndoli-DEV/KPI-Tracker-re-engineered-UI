@@ -69,18 +69,18 @@ export default function CycleForm({ id }) {
         <div className="form-section">
           <div className="form-section-head"><span className="form-no">1</span><div><h3>Cycle details</h3></div></div>
           <div className="grid g-2">
-            <Field inside label="Cycle name" required error={E('name')}><input className={`input ${E('name') ? 'invalid' : ''}`} value={f.name} onChange={(e) => set({ name: e.target.value })} /></Field>
-            <Field inside label="Status"><input className="input" disabled value={cycle ? cycle.status : 'Draft'} /></Field>
+            <Field label="Cycle name" required error={E('name')}><input className={`input ${E('name') ? 'invalid' : ''}`} value={f.name} onChange={(e) => set({ name: e.target.value })} /></Field>
+            <Field label="Status"><input className="input" disabled value={cycle ? cycle.status : 'Draft'} /></Field>
           </div>
-          <Field inside label="Description" style={{ marginTop: 12 }}><textarea className="textarea" value={f.description} onChange={(e) => set({ description: e.target.value })} /></Field>
+          <Field label="Description" style={{ marginTop: 12 }}><textarea className="textarea" value={f.description} onChange={(e) => set({ description: e.target.value })} /></Field>
         </div>
 
         <div className="form-section">
           <div className="form-section-head"><span className="form-no">2</span><div><h3>Review period</h3></div></div>
           <div className="grid g-3">
-            <Field inside label="Start date" required error={E('startDate')}><input type="date" disabled={locked} className={`input ${E('startDate') ? 'invalid' : ''}`} value={f.startDate} onChange={(e) => set({ startDate: e.target.value })} /></Field>
-            <Field inside label="End date" required error={E('endDate')}><input type="date" disabled={locked} className={`input ${E('endDate') ? 'invalid' : ''}`} value={f.endDate} min={f.startDate} onChange={(e) => set({ endDate: e.target.value })} /></Field>
-            <Field inside label="Length"><input className="input" disabled value={f.startDate && f.endDate && f.endDate >= f.startDate ? `${daysBetween(f.startDate, f.endDate)} days` : '—'} /></Field>
+            <Field label="Start date" required error={E('startDate')}><input type="date" disabled={locked} className={`input ${E('startDate') ? 'invalid' : ''}`} value={f.startDate} onChange={(e) => set({ startDate: e.target.value })} /></Field>
+            <Field label="End date" required error={E('endDate')}><input type="date" disabled={locked} className={`input ${E('endDate') ? 'invalid' : ''}`} value={f.endDate} min={f.startDate} onChange={(e) => set({ endDate: e.target.value })} /></Field>
+            <Field label="Length"><input className="input" disabled value={f.startDate && f.endDate && f.endDate >= f.startDate ? `${daysBetween(f.startDate, f.endDate)} days` : '—'} /></Field>
           </div>
         </div>
 
@@ -92,7 +92,7 @@ export default function CycleForm({ id }) {
         {!cycle && (
           <div className="form-section">
             <div className="form-section-head"><span className="form-no">4</span><div><h3>Start from a previous cycle (optional)</h3></div></div>
-            <Field inside label="Copy goals from">
+            <Field label="Copy goals from">
               <select className="select" value={copyFrom} onChange={(e) => setCopyFrom(e.target.value)} style={{ maxWidth: 420 }}>
                 <option value="">Start empty</option>
                 {sources.map((c) => <option key={c.id} value={c.id}>{c.name} — {cycleGoals(state, c.id).length} goal(s)</option>)}

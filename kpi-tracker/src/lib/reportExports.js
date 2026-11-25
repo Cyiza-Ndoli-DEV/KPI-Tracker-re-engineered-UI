@@ -61,15 +61,17 @@ export function exportTeamReport(state, cycle, team, asOf, filter = {}) {
 }
 
 /** One person's report: KPIs, results and update frequency. */
-export function exportPersonReport(state, cycle, person, asOf) {
-  const rep = personReport(state, cycle, person.id, asOf)
+export function exportPersonReport(state, cycle, person, asOf, { ownOnly = false } = {}) {
+  const rep = personReport(state, cycle, person.id, asOf, { ownOnly })
   const wb = XLSX.utils.book_new()
   const sc = rep.score
   sheet(wb, 'Summary', [
     { Item: 'Person', Value: person.name },
     { Item: 'Title', Value: person.title },
-    { Item: 'Department', Value: byId(state.departments, person.departmentId)?.name },
-    { Item: 'Team', Value: byId(state.teams, person.teamId)?.name || '—' },
+    ...(ownOnly ? [] : [
+      { Item: 'Department', Value: byId(state.departments, person.departmentId)?.name },
+      { Item: 'Team', Value: byId(state.teams, person.teamId)?.name || '—' },
+    ]),
     { Item: 'Review cycle', Value: cycle.name },
     { Item: 'As of', Value: asOf },
     { Item: sc.isLead ? 'KPI part % (team members average)' : 'KPI score % (average)', Value: pct(sc.kpiPart) },
@@ -77,7 +79,7 @@ export function exportPersonReport(state, cycle, person, asOf) {
     { Item: 'Org Fit %', Value: sc.orgFit ?? 'pending' },
     { Item: 'Final score %', Value: pct(sc.final) },
   ])
-  sheet(wb, 'KPIs', rep.items.map((it) => ({ Goal: it.goal.name, KPI: it.kpi.name, Type: KPI_TYPES[it.kpi.type].label, Target: it.kpi.type === 'completion' ? 100 : round(it.stats.target, 2), Actual: round(it.stats.current, 2), 'Achieved %': round(it.stats.progress, 1), Results: it.count, 'First result': it.first || '', 'Last result': it.last || '', 'Avg days between results': it.avgGap === null ? '' : round(it.avgGap, 1), 'Days since last': it.since ?? '' })))
+  sheet(wb, 'KPIs', rep.items.map((it) => ({ ...(ownOnly ? {} : { Goal: it.goal.name }), KPI: it.kpi.name, Type: KPI_TYPES[it.kpi.type].label, Target: it.kpi.type === 'completion' ? 100 : round(it.stats.target, 2), Actual: round(it.stats.current, 2), 'Achieved %': round(it.stats.progress, 1), Results: it.count, 'First result': it.first || '', 'Last result': it.last || '', 'Avg days between results': it.avgGap === null ? '' : round(it.avgGap, 1), 'Days since last': it.since ?? '' })))
   sheet(wb, 'Performance records', rep.records.map((r) => ({ Date: r.u.date, KPI: r.kpi.name, Entered: r.kpi.type === 'completion' ? `${r.u.completion} ${r.u.value}%` : r.u.value, 'Running total / value': r.total, Submitted: r.u.submittedAt.slice(0, 16).replace('T', ' '), Edited: r.u.editedAt ? r.u.editedAt.slice(0, 10) : '' })))
   XLSX.writeFile(wb, `Performance report ${person.name} ${cycle.name} ${asOf}.xlsx`)
 }

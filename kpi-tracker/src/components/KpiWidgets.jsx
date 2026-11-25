@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
-import { ChevronRight, ChevronDown, Target, Building2, UsersRound, User, UserPlus, UserMinus, PencilLine, ArrowRight, Equal, SlidersHorizontal, RotateCcw, Search, CheckCircle2, XCircle, CircleDashed } from 'lucide-react'
+import { ChevronRight, ChevronDown, Target, Building2, UsersRound, User, UserPlus, UserMinus, PencilLine, ArrowRight, Equal, SlidersHorizontal, RotateCcw, CheckCircle2, XCircle, CircleDashed } from 'lucide-react'
 import { useStore } from '../store'
 import DepthControl, { RANK } from './DepthControl'
-import { Modal, Field, NumInput, Seg, Alert, Badge, Progress, Avatar, useFeedback, navigate, toneFor, ScoreDot } from './ui'
+import { Modal, Field, NumInput, Seg, Alert, Badge, Progress, Avatar, useFeedback, navigate, toneFor, ScoreDot, SearchField } from './ui'
 import { byId, childAllocations, nodeStats, unitName, allocationUpdates, kpiStart, periodTarget, progressOf } from '../lib/calc'
 import { fmtValue, fmtPct, fmtDate, fmtShortDate, round, sum, todayISO, addDays, daysBetween, minISO, maxISO, parseISO } from '../lib/utils'
 
@@ -214,7 +214,7 @@ export function UpdateModal({ alloc, update, onClose }) {
             </div>
             {tried && errs.value && <div className="err small" style={{ color: 'var(--red)' }}>{errs.value}</div>}
             {completion === 'partial' && (
-              <Field label="How much is done?" error={tried ? errs.partial : undefined}>
+              <Field label="How much is done?" group error={tried ? errs.partial : undefined}>
                 <div className="row wrap gap-8">
                   <Seg value={partial === 'other' ? 'other' : Number(partial)} onChange={setPartial} options={[...presets.map((p) => ({ value: p, label: `${p}%` })), { value: 'other', label: 'Other %' }]} />
                   {partial === 'other' && (
@@ -373,13 +373,10 @@ export function AddMemberModal({ parent, onClose }) {
       {step === 0 && (
         <div className="grid" style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,1.15fr)', alignItems: 'start' }}>
         <div className="col gap-16">
-          <Field label="Pick the person from the staff list" required>
+          <Field label="Person" group required>
             <div className="picker">
               <div style={{ padding: 8, borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
-                <div className="input-group">
-                  <Search size={15} style={{ position: 'absolute', left: 10, color: 'var(--muted)' }} />
-                  <input className="input sm" style={{ paddingLeft: 32 }} placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} />
-                </div>
+                <SearchField label="Search staff" value={q} onChange={setQ} compact />
                 <label className="check small mt-8"><input type="checkbox" checked={outside} onChange={(e) => setOutside(e.target.checked)} /> Include people from other teams and departments</label>
               </div>
               <div className="picker-list" style={{ maxHeight: 230 }}>
@@ -431,7 +428,7 @@ export function AddMemberModal({ parent, onClose }) {
                   <span className="semi">= {fmtValue(kpi.unit, amt(Number(newPct) || 0), false)}</span>
                 </div>
               </Field>
-              <Field label="Take it from">
+              <Field label="Take it from" group>
                 <Seg
                   value={members.length ? source : 'unallocated'}
                   onChange={setSource}

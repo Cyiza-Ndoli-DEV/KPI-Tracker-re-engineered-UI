@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { ChevronRight, UserPlus, RotateCcw, Eraser, Copy, History, ListChecks, ScrollText, MessageSquareText, GitBranch, LineChart as LineIcon, Lock, Unlock, PencilLine, Send, Target as TargetIcon, Search, X } from 'lucide-react'
+import { ChevronRight, UserPlus, RotateCcw, Eraser, Copy, History, ListChecks, ScrollText, MessageSquareText, GitBranch, LineChart as LineIcon, Lock, Unlock, PencilLine, Send, Target as TargetIcon, X } from 'lucide-react'
 import { useStore, useCurrentUser } from '../store'
-import { BackLink, Ring, Badge, Link, Empty, Tabs, Modal, Field, Alert, Avatar, useFeedback, Progress, toneFor, GoalStatus, ScoreDot } from '../components/ui'
+import { BackLink, Ring, Badge, Link, Empty, Tabs, Modal, Field, Alert, Avatar, useFeedback, Progress, toneFor, GoalStatus, ScoreDot, SearchField } from '../components/ui'
 import { AllocationTree, AddMemberModal, UpdateModal, RestartModal, ReuseModal, LineChart, valueLabel } from '../components/KpiWidgets'
 import { LeaverModal, EditKpiModal, EditSharesModal } from '../components/ChangeModals'
 import LevelTabs from '../components/LevelTabs'
@@ -302,11 +302,8 @@ export function AuditTable({ state, entries, showKpi }) {
 
   return (
     <>
-      <div className="row wrap table-toolbar audit-filters">
-        <div className="input-group" style={{ width: 210 }}>
-          <Search size={15} style={{ position: 'absolute', left: 10, color: 'var(--muted)' }} />
-          <input className="input" style={{ paddingLeft: 32 }} placeholder="Search changes or comments" value={q} onChange={(e) => setQ(e.target.value)} />
-        </div>
+      <div className="row wrap table-toolbar filter-toolbar audit-filters">
+        <SearchField label="Search changes or comments" value={q} onChange={setQ} style={{ width: 210 }} />
         <label className="filter-field">Member
           <select className="select" value={who} onChange={(e) => setWho(e.target.value)}>
             <option value="all">Everyone</option>

@@ -1,10 +1,9 @@
 import { useState } from 'react'
-import { Settings, Lock, Unlock, X, Plus, ScrollText, Database, RefreshCw, Check, Undo2, Clock, UserMinus, Users } from 'lucide-react'
+import { Settings, Lock, Unlock, ScrollText, Database, RefreshCw, Undo2, Clock, Users } from 'lucide-react'
 import { useStore } from '../store'
-import { Field, NumInput, Badge, Tabs, Empty, Avatar, useFeedback } from '../components/ui'
+import { NumInput, Badge, Tabs, Empty, Avatar, useFeedback } from '../components/ui'
 import { valueLabel } from '../components/KpiWidgets'
 import { AuditTable } from './KpiDetail'
-import { LeaverModal } from '../components/ChangeModals'
 import { SetupPanel } from './AdminSetup'
 import { byId, unitName } from '../lib/calc'
 import { fmtDate, fmtDateTime, timeAgo } from '../lib/utils'
@@ -15,9 +14,6 @@ export default function Admin() {
   const [section, setSection] = useState('setup')
   const [tab, setTab] = useState('pending')
   const [extendDays, setExtendDays] = useState({})
-  const [leaver, setLeaver] = useState(false)
-  const staffMoves = state.audit.filter((a) => ['Member left', 'Member moved out', 'Member removed'].includes(a.action))
-  const leavers = state.staff.filter((s) => s.active === false)
 
   const pending = state.editRequests.filter((r) => r.status === 'pending')
   const granted = state.editRequests.filter((r) => r.status === 'granted')
@@ -35,7 +31,6 @@ export default function Admin() {
         <Tabs value={section} onChange={setSection} tabs={[
           { key: 'setup', label: 'Set up', icon: <Settings size={15} /> },
           { key: 'requests', label: 'Edit requests', icon: <Lock size={15} />, count: pending.length || undefined },
-          { key: 'staff', label: 'Staff changes', icon: <UserMinus size={15} /> },
           { key: 'audit', label: 'Audit log', icon: <ScrollText size={15} /> },
           { key: 'system', label: 'HR sync & demo', icon: <Database size={15} /> },
         ]} />
@@ -96,37 +91,6 @@ export default function Admin() {
       </div>
 
       </>)}
-
-      {section === 'staff' && (<>
-      <div className="card">
-        <div className="card-head">
-          <UserMinus size={18} color="var(--blue-600)" /><h3>Staff changes</h3>
-          <div className="spacer" />
-          <button className="btn primary sm" onClick={() => setLeaver(true)}><UserMinus size={14} /> Record a leaver or a move</button>
-        </div>
-        {staffMoves.length === 0 ? (
-          <Empty title="No staff changes yet" />
-        ) : (
-          <table className="table">
-            <thead><tr><th>When</th><th>Person → group</th><th>What happened</th><th>Before</th><th>After</th><th>By</th></tr></thead>
-            <tbody>
-              {staffMoves.slice(0, 12).map((a) => (
-                <tr key={a.id}>
-                  <td className="small nowrap">{fmtDateTime(a.at)}</td>
-                  <td className="small semi">{a.subject}<div className="tiny muted">{byId(state.kpis, a.kpiId)?.name}</div></td>
-                  <td className="small">{a.note}</td>
-                  <td className="tiny muted" style={{ maxWidth: 220 }}>{a.oldValue}</td>
-                  <td className="tiny" style={{ maxWidth: 320 }}>{a.newValue}</td>
-                  <td className="small">{byId(state.staff, a.who)?.name}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-        {leavers.length > 0 && <div className="card-pad small muted" style={{ borderTop: '1px solid var(--border)' }}>Inactive in the KPI Tracker: {leavers.map((s) => `${s.name} (left ${fmtDate(s.leftDate)})`).join(', ')}</div>}
-      </div>
-      </>)}
-      {leaver && <LeaverModal onClose={() => setLeaver(false)} />}
 
       {section === 'audit' && (
       <div className="card">

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import { Gauge, Search, Target, Wand2, Building2, UsersRound, User, ChevronRight, ChevronDown, ChevronsDownUp, ChevronsUpDown, X } from 'lucide-react'
+import { Gauge, Target, Wand2, Building2, UsersRound, User, ChevronRight, ChevronDown, ChevronsDownUp, ChevronsUpDown, X } from 'lucide-react'
 import { useStore } from '../store'
-import { Link, Empty, Progress, Avatar, Badge, navigate, toneFor, ScoreDot } from '../components/ui'
+import { Link, Empty, Progress, Avatar, Badge, navigate, toneFor, ScoreDot, SearchField } from '../components/ui'
 import { byId, cycleGoals, KPI_TYPES } from '../lib/calc'
 import { fmtPct, fmtShortDate } from '../lib/utils'
 import { valueLabel } from '../components/KpiWidgets'
@@ -67,7 +67,6 @@ export default function Kpis() {
   const setAllOrg = (open) => setCollapsed(Object.fromEntries(orgKeys.map((k) => [k, !open])))
   const clear = () => { setLevel('all'); setOwner('all'); setQ(''); setGoalId('all'); setType('all') }
   const filtered = level !== 'all' || owner !== 'all' || s || goalId !== 'all' || type !== 'all'
-  const ownerObj = owner !== 'all' && owners.flatMap((g) => g.list).find((o) => o.id === owner)
 
   return (
     <div>
@@ -89,7 +88,6 @@ export default function Kpis() {
               <div style={{ textAlign: 'left' }}>
                 <div className="v">{counts[l]}</div>
                 <div className="small semi">{l === 'organization' ? 'Organization KPIs' : `${LEVEL_NAME[l]} KPI shares`}</div>
-                <div className="tiny muted">{l === 'organization' ? 'set once on the goal' : l === 'individual' ? 'where results are recorded' : 'shares of the level above'}</div>
               </div>
             </button>
           )
@@ -97,11 +95,8 @@ export default function Kpis() {
       </div>
 
       <div className="card" style={{ overflowX: 'auto' }}>
-        <div className="row wrap table-toolbar">
-          <div className="input-group" style={{ width: 230 }}>
-            <Search size={15} style={{ position: 'absolute', left: 10, color: 'var(--muted)' }} />
-            <input className="input" style={{ paddingLeft: 32 }} placeholder="Search KPI, owner or goal" value={q} onChange={(e) => setQ(e.target.value)} />
-          </div>
+        <div className="row wrap table-toolbar filter-toolbar">
+          <SearchField label="Search KPI, owner or goal" value={q} onChange={setQ} style={{ width: 230 }} />
           <label className="filter-field">Level
             <select className="select" value={level} onChange={(e) => { setLevel(e.target.value); setOwner('all') }}>
               <option value="all">All levels</option>
@@ -134,11 +129,11 @@ export default function Kpis() {
           <div className="spacer" />
           {filtered && <button className="btn ghost sm" onClick={clear}><X size={14} /> Clear filters</button>}
         </div>
-        <div className="row small muted" style={{ padding: '8px 16px', borderBottom: '1px solid var(--border)' }}>
-          {treeMode && <><DepthControl value={depthTo} onChange={(v) => { setDepthTo(v); setAllOrg(v !== 'organization') }} levels={['organization', 'department', 'team', 'individual']} /><span className="spacer" /></>}
-          {treeMode && <button className="btn ghost sm" style={{ order: 3 }} onClick={() => setAllOrg(!allOpen)}>{allOpen ? <><ChevronsDownUp size={14} /> Collapse all</> : <><ChevronsUpDown size={14} /> Expand all</>}</button>}
-          {treeMode ? <>Showing the hierarchy: organization KPI → department → team → person. Click any row for its details.</> : <>{rows.length} KPI{rows.length === 1 ? '' : 's'}{ownerObj ? <> held by <b>{ownerObj.name}</b></> : level !== 'all' ? <> at <b>{LEVEL_NAME[level].toLowerCase()}</b> level</> : ''}. The <b>Hierarchy</b> column shows where each one sits.</>}
-        </div>
+        {treeMode && <div className="row small muted" style={{ padding: '8px 16px', borderBottom: '1px solid var(--border)' }}>
+          <DepthControl value={depthTo} onChange={(v) => { setDepthTo(v); setAllOrg(v !== 'organization') }} levels={['organization', 'department', 'team', 'individual']} />
+          <span className="spacer" />
+          <button className="btn ghost sm" onClick={() => setAllOrg(!allOpen)}>{allOpen ? <><ChevronsDownUp size={14} /> Collapse all</> : <><ChevronsUpDown size={14} /> Expand all</>}</button>
+        </div>}
 
         {visible.length === 0 ? (
           <Empty icon={<Gauge />} title="No KPIs match these filters" action={<button className="btn secondary" onClick={clear}>Clear filters</button>} />

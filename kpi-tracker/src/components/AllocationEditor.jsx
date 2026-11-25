@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Equal, Percent, Hash, Copy, Search, X, Users, Check, AlertCircle } from 'lucide-react'
-import { NumInput, Seg, Avatar } from './ui'
+import { Equal, Percent, Hash, Copy, X, Users, Check, AlertCircle } from 'lucide-react'
+import { NumInput, Seg, Avatar, SearchField } from './ui'
 import { fmtValue, round, sum, fmtPct } from '../lib/utils'
 
 export const METHODS = [
@@ -282,10 +282,7 @@ export function StaffPicker({ state, candidates, selectedIds, onToggle, disabled
       {open && (
         <div className="picker mt-8">
           <div className="row" style={{ padding: 8, borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
-            <div className="input-group" style={{ flex: 1 }}>
-              <Search size={15} style={{ position: 'absolute', left: 10, color: 'var(--muted)' }} />
-              <input className="input sm" style={{ paddingLeft: 32 }} placeholder="Search staff by name or role…" value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
-            </div>
+            <SearchField label="Search staff by name or role" value={q} onChange={setQ} compact autoFocus style={{ flex: 1 }} />
             {allCandidates && (
               <label className="check small">
                 <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} /> {showAllLabel}

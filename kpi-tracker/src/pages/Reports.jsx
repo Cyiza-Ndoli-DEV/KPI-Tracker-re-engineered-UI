@@ -1,7 +1,8 @@
 import { Fragment, useMemo, useState } from 'react'
-import { BarChart3, Trophy, Building2, UsersRound, User, Target, ClipboardCheck, Download, Printer, Lightbulb, TrendingUp, Gauge, Users, CalendarClock, Info, Search, ChevronRight, ChevronDown, ChevronsDownUp, ChevronsUpDown, AlertTriangle, LifeBuoy, UserX, FileSpreadsheet, ArrowRight, LineChart as LineIcon } from 'lucide-react'
+import { BarChart3, Trophy, Building2, UsersRound, User, Target, ClipboardCheck, Download, Printer, Lightbulb, TrendingUp, Gauge, Users, CalendarClock, Info, ChevronRight, ChevronDown, ChevronsDownUp, ChevronsUpDown, AlertTriangle, LifeBuoy, UserX, FileSpreadsheet, ArrowRight, LineChart as LineIcon } from 'lucide-react'
+import { Mail } from 'lucide-react'
 import { useStore, useCurrentUser } from '../store'
-import { Tabs, Badge, Progress, Avatar, Empty, Field, Link, Seg, toneFor, useFeedback, navigate, PctBar } from '../components/ui'
+import { Tabs, Badge, Progress, Avatar, Empty, Field, Link, Modal, Seg, toneFor, useFeedback, navigate, PctBar, SearchField } from '../components/ui'
 import { valueLabel, LineChart } from '../components/KpiWidgets'
 import BandScale from '../components/BandScale'
 import CountChart from '../components/CountChart'
@@ -25,6 +26,8 @@ export default function Reports({ query = {} }) {
   const [tab, setTab] = useState(query.tab || 'overview')
   const [asOf, setAsOf] = useState(reportDefaultAsOf(cycle, todayISO()))
   const [dept, setDept] = useState(scoped ? user.departmentId : 'all')
+  const [rankingDept, setRankingDept] = useState('all')
+  const rankingDepartment = state.role === 'admin' ? dept : rankingDept
   const [goalId, setGoalId] = useState('all')
   const [kpiId, setKpiId] = useState('all')
   const goals = cycleGoals(state, cycle.id).filter((g) => g.status !== 'draft')
@@ -42,7 +45,7 @@ export default function Reports({ query = {} }) {
       teams: levelRows(state, cycle, 'team', asOf, dept, filter),
       people,
       kpis: kpiRows(state, cycle, asOf).filter((r) => (!filter.goalId || r.goal.id === filter.goalId) && (!filter.kpiId || r.kpi.id === filter.kpiId)),
-      stale: everyone.filter((r) => r.stale).sort((a, b) => (b.since ?? 1e9) - (a.since ?? 1e9)),
+      stale: everyone.filter((r) => r.stale && r.items.length).sort((a, b) => (b.since ?? 1e9) - (a.since ?? 1e9)),
       pip: people.filter((r) => r.score !== null && r.score < pipBelow).sort((a, b) => a.score - b.score),
       unassigned: unassignedStaff(state, cycle, dept),
       unshared: unsharedNodes(state, cycle),
@@ -51,6 +54,7 @@ export default function Reports({ query = {} }) {
   }, [state, cycle, asOf, dept, goalId, kpiId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const go = (t) => { setTab(t); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+  const showReportCounts = tab !== 'ranking' || state.role === 'admin'
   const tabs = [
     { key: 'overview', label: 'Overview', icon: <BarChart3 size={15} /> },
     { key: 'ranking', label: 'Member ranking', icon: <Trophy size={15} /> },
@@ -65,21 +69,21 @@ export default function Reports({ query = {} }) {
       <div className="page-head" style={{ marginBottom: 0 }}>
         <div>
           <h1>Reports</h1>
-          <div className="sub">{cycle.name} · as of {fmtDate(asOf)}{dept !== 'all' ? ` · ${byId(state.departments, dept)?.name}` : ''}{filter.goalId ? ` · ${byId(state.goals, filter.goalId)?.name}` : ''}{filter.kpiId ? ` · ${byId(state.kpis, filter.kpiId)?.name}` : ''}</div>
+          <div className="sub">{cycle.name} · as of {fmtDate(asOf)}{(tab === 'ranking' ? rankingDepartment : dept) !== 'all' ? ` · ${byId(state.departments, tab === 'ranking' ? rankingDepartment : dept)?.name}` : ''}{filter.goalId ? ` · ${byId(state.goals, filter.goalId)?.name}` : ''}{filter.kpiId ? ` · ${byId(state.kpis, filter.kpiId)?.name}` : ''}</div>
         </div>
         <div className="spacer" />
         <button className="btn secondary no-print" onClick={() => window.print()}><Printer size={16} /> Print</button>
-        <button className="btn primary no-print" onClick={() => { exportFullReport(state, cycle, asOf, dept, filter, data); toast('Full report exported to Excel.') }}><Download size={16} /> Export to Excel</button>
+        {showReportCounts && <button className="btn primary no-print" onClick={() => { exportFullReport(state, cycle, asOf, dept, filter, data); toast('Full report exported to Excel.') }}><Download size={16} /> Export to Excel</button>}
       </div>
 
       <div className="card card-pad row wrap gap-16 no-print" style={{ alignItems: 'flex-end' }}>
         <Field label="As of date"><input type="date" className="input" value={asOf} min={cycle.startDate} max={cycle.endDate} onChange={(e) => e.target.value && setAsOf(e.target.value)} /></Field>
-        <Field label="Department">
+        {tab !== 'ranking' && <Field label="Department">
           <select className="select" value={dept} disabled={scoped} onChange={(e) => setDept(e.target.value)}>
             <option value="all">All departments</option>
             {state.departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
-        </Field>
+        </Field>}
         <Field label="Goal">
           <select className="select" value={goalId} onChange={(e) => { setGoalId(e.target.value); setKpiId('all') }}>
             <option value="all">All goals</option>
@@ -98,11 +102,11 @@ export default function Reports({ query = {} }) {
       </div>
 
       <div className="card no-print" style={{ padding: '0 8px' }}>
-        <Tabs tabs={tabs} value={tab} onChange={setTab} />
+        <Tabs tabs={showReportCounts ? tabs : tabs.map((item) => ({ ...item, count: undefined }))} value={tab} onChange={setTab} />
       </div>
 
       {tab === 'overview' && <Overview data={data} cycle={cycle} asOf={asOf} go={go} filter={filter} />}
-      {tab === 'ranking' && <Rankings embedded deptFilter={dept} key={dept} />}
+      {tab === 'ranking' && <Rankings deptFilter={rankingDepartment} onDepartmentChange={state.role === 'admin' ? setDept : setRankingDept} reportFilter={filter} asOf={asOf} key={rankingDepartment + ':' + user.id} />}
       {tab === 'departments' && <LevelReport rows={data.departments} level="department" />}
       {tab === 'teams' && <LevelReport rows={data.teams} level="team" onExport={(t) => { exportTeamReport(state, cycle, t, asOf, filter); toast(`Team report for ${t.name} exported.`) }} />}
       {tab === 'individuals' && <LevelReport rows={data.people} level="individual" />}
@@ -240,7 +244,6 @@ function Overview({ data, cycle, asOf, go, filter }) {
                 <span className="tiny muted">joined {fmtShortDate(s.joinedDate)}</span>
               </div>
             ))}
-            {data.unassigned.length > 0 && <div className="tiny muted">Give them a share with <b>Add member</b> on a running KPI.</div>}
           </div>
           <CardLink onClick={() => go('compliance')}>Update compliance</CardLink>
         </div>
@@ -340,18 +343,14 @@ function LevelReport({ rows, level, onExport }) {
       </div>
 
       <div className="card" style={{ overflowX: 'auto' }}>
-        <div className="row wrap table-toolbar">
-          <div className="input-group" style={{ width: 220 }}>
-            <Search size={15} style={{ position: 'absolute', left: 10, color: 'var(--muted)' }} />
-            <input className="input" style={{ paddingLeft: 32 }} placeholder={`Search ${L.one}`} value={q} onChange={(e) => setQ(e.target.value)} />
-          </div>
+        <div className="row wrap table-toolbar filter-toolbar">
+          <SearchField label={`Search ${L.one}`} value={q} onChange={setQ} style={{ width: 220 }} />
           <div className="seg">
             <button className={bandF === 'all' ? 'on' : ''} onClick={() => setBandF('all')}>All {rows.length}</button>
             {bands.map((b) => <button key={b.key} className={bandF === b.key ? 'on' : ''} onClick={() => setBandF(b.key)}><i className="band-dot" style={{ background: TONE_COLOR[b.tone] }} />{b.label} {counts[b.key] || 0}</button>)}
           </div>
           <label className="check small"><input type="checkbox" checked={onlyStale} onChange={(e) => setOnlyStale(e.target.checked)} /> Only those who have not updated</label>
           <div className="spacer" />
-          <span className="tiny muted">Click a row for each KPI</span>
         </div>
         <table className="table report-table">
           <thead>
@@ -442,8 +441,53 @@ function LevelReport({ rows, level, onExport }) {
 // =====================================================================
 // Update compliance
 // =====================================================================
+function ReminderEmail({ recipient, cycle, onClose }) {
+  const [email, setEmail] = useState(recipient.email || recipient.workEmail || '')
+  const [subject, setSubject] = useState(`KPI update reminder · ${cycle.name}`)
+  const [message, setMessage] = useState(() => {
+    const link = new URL(window.location.href)
+    link.hash = '/my-kpis'
+    return `Hi ${recipient.name},\n\nPlease update your assigned KPIs for ${cycle.name} in My KPIs.\n${link.href}\n\nThank you.`
+  })
+
+  function compose(event) {
+    event.preventDefault()
+    const address = encodeURIComponent(email.trim()).replace('%40', '@')
+    window.location.href = `mailto:${address}?subject=${encodeURIComponent(subject.trim())}&body=${encodeURIComponent(message.replace(/\r?\n/g, '\r\n'))}`
+    onClose()
+  }
+
+  return (
+    <Modal title="Email KPI reminder" sub={recipient.name} icon={<Mail size={20} />} onClose={onClose} footer={
+      <>
+        <button type="button" className="btn secondary" onClick={onClose}>Cancel</button>
+        <button type="submit" className="btn primary" form="kpi-reminder" disabled={!email.trim() || !subject.trim() || !message.trim()}>Open email draft</button>
+      </>
+    }>
+      <form id="kpi-reminder" className="col gap-12" onSubmit={compose}>
+        <Field label="Recipient email" htmlFor="kpi-reminder-email" required>
+          <input id="kpi-reminder-email" className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        </Field>
+        <Field label="Subject" htmlFor="kpi-reminder-subject" required>
+          <input id="kpi-reminder-subject" className="input" required value={subject} onChange={(e) => setSubject(e.target.value)} />
+        </Field>
+        <Field label="Message" htmlFor="kpi-reminder-message" required>
+          <textarea id="kpi-reminder-message" className="textarea" rows={7} required value={message} onChange={(e) => setMessage(e.target.value)} />
+        </Field>
+      </form>
+    </Modal>
+  )
+}
+
 function Compliance({ data, asOf, cycle, dept }) {
   const { state } = useStore()
+  const user = useCurrentUser()
+  const [reminderId, setReminderId] = useState(null)
+  const canRemind = (person) =>
+    state.role === 'admin' ||
+    (state.role === 'dept_head' && state.departments.some((d) => d.id === person.departmentId && d.headId === user.id)) ||
+    (state.role === 'team_lead' && state.teams.some((t) => t.id === person.teamId && t.leadId === user.id))
+  const recipient = data.stale.find(({ unit }) => unit.id === reminderId && canRemind(unit))?.unit
   const nodes = useMemo(() => kpiNodes(state, cycle.id), [state, cycle.id])
   const kpis = [...new Map(nodes.map((n) => [n.kpi.id, n.kpi])).values()]
   // KPI performance graph: pick a KPI, then a level and an owner
@@ -501,10 +545,11 @@ function Compliance({ data, asOf, cycle, dept }) {
 
       <div className="grid g-2" style={{ alignItems: 'start' }}>
         <div className="card">
-          <div className="card-head"><CalendarClock size={18} color="var(--amber)" /><h3>Members who have not updated</h3><span className="small muted">no result for {staleDays}+ days</span><div className="spacer" /><Badge tone="amber">{data.stale.length}</Badge></div>
+          <div className="card-head"><CalendarClock size={18} color="var(--amber)" /><h3>Members who have not updated</h3><div className="spacer" /><Badge tone="amber">{data.stale.length}</Badge></div>
           {data.stale.length === 0 ? <Empty title="Everyone is up to date" /> : (
+            <div className="scroll-x">
             <table className="table">
-              <thead><tr><th>Person</th><th>Department / team</th><th className="right">Last result</th><th className="right">Days since</th></tr></thead>
+              <thead><tr><th>Person</th><th>Department / team</th><th className="right">Last result</th><th className="right">Days since</th><th className="no-print">Reminder</th></tr></thead>
               <tbody>
                 {data.stale.map((r) => (
                   <tr key={r.unit.id} className="clickable" onClick={() => navigate(`/reports/person/${r.unit.id}`)}>
@@ -512,12 +557,17 @@ function Compliance({ data, asOf, cycle, dept }) {
                     <td className="small">{r.dept?.name}{r.team ? ` · ${r.team.name}` : ''}</td>
                     <td className="right small">{r.lastUpdate ? fmtDate(r.lastUpdate) : <span className="badge red">never</span>}</td>
                     <td className="right mono bold" style={{ color: r.since === null || r.since > 60 ? 'var(--red)' : 'var(--amber)' }}>{r.since ?? '—'}</td>
+                    <td className="no-print" onClick={(e) => e.stopPropagation()}>
+                      {canRemind(r.unit) && <button type="button" className="btn soft sm nowrap" aria-label={`Email reminder to ${r.name}`} onClick={() => setReminderId(r.unit.id)}><Mail size={14} /> Email reminder</button>}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
+        {recipient && <ReminderEmail key={recipient.id} recipient={recipient} cycle={cycle} onClose={() => setReminderId(null)} />}
         <div className="col gap-16">
           <div className="card">
             <div className="card-head"><UserX size={18} color="var(--muted)" /><h3>People without KPIs</h3><div className="spacer" /><Badge>{data.unassigned.length}</Badge></div>

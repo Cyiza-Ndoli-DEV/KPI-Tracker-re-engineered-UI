@@ -213,7 +213,7 @@ export const orgFitOf = (state, staffId, cycleId) => {
  */
 export function personScore(state, staffId, cycleId, filter = {}, asOf) {
   const own = personKpiScore(state, staffId, cycleId, filter, asOf)
-  const members = ledTeams(state, staffId).length ? teamMembersOf(state, staffId, cycleId) : []
+  const members = !filter.ownOnly && ledTeams(state, staffId).length ? teamMembersOf(state, staffId, cycleId) : []
   const memberScores = members.map((m) => personKpiScore(state, m.id, cycleId, filter, asOf)).filter((x) => x !== null)
   const isLead = memberScores.length > 0
   const kpiPart = isLead ? sum(memberScores) / memberScores.length : own
