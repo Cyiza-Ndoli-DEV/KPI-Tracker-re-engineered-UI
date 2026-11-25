@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CalendarRange, Plus, Play, Square, Wand2, Copy, PencilLine, CheckCircle2, Trash2 } from 'lucide-react'
+import { ArrowRight, CalendarRange, Plus, Play, Square, Wand2, Copy, PencilLine, CheckCircle2, Trash2 } from 'lucide-react'
 import { useStore } from '../store'
 import { Modal, Field, NumInput, Badge, Alert, Ring, useFeedback, navigate, Seg } from '../components/ui'
 import { cycleGoals, cycleScore, band, goalKpis } from '../lib/calc'
