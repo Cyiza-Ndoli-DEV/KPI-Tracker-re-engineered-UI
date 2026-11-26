@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react'
 import { Gauge, Target, Wand2, Building2, UsersRound, User, ChevronRight, ChevronDown, ChevronsDownUp, ChevronsUpDown, X } from 'lucide-react'
 import { useStore } from '../store'
-import { Link, Empty, Progress, Avatar, Badge, navigate, toneFor, ScoreDot, SearchField } from '../components/ui'
+import { Link, Empty, Avatar, Badge, navigate, ScoreDot, SearchField, Tabs } from '../components/ui'
 import { byId, cycleGoals, KPI_TYPES } from '../lib/calc'
 import { fmtPct, fmtShortDate } from '../lib/utils'
 import { valueLabel } from '../components/KpiWidgets'
 import { kpiNodes, LEVELS, LEVEL_NAME } from '../lib/hierarchy'
-import DepthControl, { RANK } from '../components/DepthControl'
 
 export const LEVEL_ICON = { organization: Target, department: Building2, team: UsersRound, individual: User }
 
@@ -26,15 +25,13 @@ export default function Kpis() {
   const [type, setType] = useState('all')
   const [level, setLevel] = useState('all')
   const [owner, setOwner] = useState('all')
-  const [showLeft, setShowLeft] = useState(false)
   const [collapsed, setCollapsed] = useState({})
   // organization KPIs start closed; open one to see who holds it
   const isCollapsed = (key) => collapsed[key] ?? key.startsWith('org-')
-  const [depthTo, setDepthTo] = useState('individual')
   const isAdmin = state.role === 'admin'
 
   const all = useMemo(() => kpiNodes(state, cycle.id), [state, cycle.id])
-  const base = all.filter((n) => (goalId === 'all' || n.goal.id === goalId) && (type === 'all' || n.kpi.type === type) && (showLeft || !n.alloc?.leftDate))
+  const base = all.filter((n) => (goalId === 'all' || n.goal.id === goalId) && (type === 'all' || n.kpi.type === type) && !n.alloc?.leftDate)
   const counts = Object.fromEntries(LEVELS.map((l) => [l, base.filter((n) => n.level === l).length]))
 
   // owner options: every unit / person that holds at least one KPI share, grouped by level
@@ -50,7 +47,6 @@ export default function Kpis() {
   // in tree mode hide everything under a collapsed node
   const visible = treeMode
     ? rows.filter((n) => {
-        if (RANK[n.level] > RANK[depthTo]) return false
         if (!n.alloc) return true
         if (isCollapsed(`org-${n.kpi.id}`)) return false
         let p = n.parentAlloc
@@ -78,31 +74,15 @@ export default function Kpis() {
         {isAdmin && cycle.status !== 'ended' && <Link to="/wizard" className="btn primary"><Wand2 size={16} /> Set up a goal with KPIs</Link>}
       </div>
 
-      <div className="grid g-4 mb-16">
-        {LEVELS.map((l) => {
-          const Icon = LEVEL_ICON[l]
-          const on = level === l
-          return (
-            <button key={l} className={`card stat level-card ${on ? 'on' : ''}`} onClick={() => { setLevel(on ? 'all' : l); setOwner('all') }}>
-              <div className={`icon lvl-ic ${l}`}><Icon size={19} /></div>
-              <div style={{ textAlign: 'left' }}>
-                <div className="v">{counts[l]}</div>
-                <div className="small semi">{l === 'organization' ? 'Organization KPIs' : `${LEVEL_NAME[l]} KPI shares`}</div>
-              </div>
-            </button>
-          )
-        })}
-      </div>
-
       <div className="card" style={{ overflowX: 'auto' }}>
+        <div style={{ padding: '0 14px' }}>
+          <Tabs value={level} onChange={(key) => { setLevel(key); setOwner('all') }} tabs={[
+            { key: 'all', label: 'All', count: base.length },
+            ...LEVELS.map((key) => ({ key, label: LEVEL_NAME[key], count: counts[key] })),
+          ]} />
+        </div>
         <div className="row wrap table-toolbar filter-toolbar">
           <SearchField label="Search KPI, owner or goal" value={q} onChange={setQ} style={{ width: 230 }} />
-          <label className="filter-field">Level
-            <select className="select" value={level} onChange={(e) => { setLevel(e.target.value); setOwner('all') }}>
-              <option value="all">All levels</option>
-              {LEVELS.map((l) => <option key={l} value={l}>{LEVEL_NAME[l]}</option>)}
-            </select>
-          </label>
           <label className="filter-field">Owner
             <select className="select" value={owner} onChange={(e) => setOwner(e.target.value)} disabled={level === 'organization'}>
               <option value="all">{level === 'all' ? 'All owners' : level === 'organization' ? state.settings.orgName : level === 'individual' ? 'All people' : `All ${LEVEL_NAME[level].toLowerCase()}s`}</option>
@@ -125,12 +105,10 @@ export default function Kpis() {
               {Object.entries(KPI_TYPES).map(([k, t]) => <option key={k} value={k}>{t.label}</option>)}
             </select>
           </label>
-          <label className="check small"><input type="checkbox" checked={showLeft} onChange={(e) => setShowLeft(e.target.checked)} /> Include people who left</label>
           <div className="spacer" />
           {filtered && <button className="btn ghost sm" onClick={clear}><X size={14} /> Clear filters</button>}
         </div>
         {treeMode && <div className="row small muted" style={{ padding: '8px 16px', borderBottom: '1px solid var(--border)' }}>
-          <DepthControl value={depthTo} onChange={(v) => { setDepthTo(v); setAllOrg(v !== 'organization') }} levels={['organization', 'department', 'team', 'individual']} />
           <span className="spacer" />
           <button className="btn ghost sm" onClick={() => setAllOrg(!allOpen)}>{allOpen ? <><ChevronsDownUp size={14} /> Collapse all</> : <><ChevronsUpDown size={14} /> Expand all</>}</button>
         </div>}
@@ -140,21 +118,20 @@ export default function Kpis() {
         ) : (
           <table className={`table kpi-nodes ${treeMode ? 'tree' : 'flat'}`}>
             {treeMode ? (
-              <colgroup><col style={{ width: '36%' }} /><col style={{ width: '11%' }} /><col style={{ width: '12%' }} /><col style={{ width: '11%' }} /><col style={{ width: '11%' }} /><col style={{ width: '9%' }} /><col style={{ width: '10%' }} /></colgroup>
+              <colgroup><col style={{ width: '40%' }} /><col style={{ width: '12%' }} /><col style={{ width: '13%' }} /><col style={{ width: '13%' }} /><col style={{ width: '13%' }} /><col style={{ width: '9%' }} /></colgroup>
             ) : (
-              <colgroup><col style={{ width: '20%' }} /><col style={{ width: '17%' }} /><col style={{ width: '9%' }} /><col style={{ width: '18%' }} /><col style={{ width: '9%' }} /><col style={{ width: '8%' }} /><col style={{ width: '8%' }} /><col style={{ width: '5%' }} /><col style={{ width: '6%' }} /></colgroup>
+              <colgroup><col style={{ width: '22%' }} /><col style={{ width: '18%' }} /><col style={{ width: '10%' }} /><col style={{ width: '18%' }} /><col style={{ width: '9%' }} /><col style={{ width: '8%' }} /><col style={{ width: '9%' }} /><col style={{ width: '6%' }} /></colgroup>
             )}
             <thead>
               <tr>
                 <th>{treeMode ? 'KPI / owner' : 'KPI'}</th>
                 {!treeMode && <th>Owner</th>}
                 <th>Level</th>
-                {!treeMode && <th>Hierarchy (parent chain)</th>}
+                {!treeMode && <th>{level === 'all' ? 'Hierarchy' : 'Goal'}</th>}
                 <th className="right">Share of parent</th>
                 <th className="right">Target</th>
                 <th className="right">Achieved</th>
                 <th>Progress</th>
-                <th className="right">Last result</th>
               </tr>
             </thead>
             <tbody>
@@ -195,7 +172,7 @@ export default function Kpis() {
                     <td className="tiny">
                         <div className="path">
                           <Link to={`/goals/${n.goal.id}`} className="goal-chip" onClick={(e) => e.stopPropagation()}>{n.goal.name}</Link>
-                          <div className="mt-4 muted">{[...n.path, n.alloc ? n.owner.name : null].filter(Boolean).map((p, i, arr) => <span key={i}>{i === arr.length - 1 ? <b style={{ color: 'var(--text)' }}>{p}</b> : p}{i < arr.length - 1 ? ' › ' : ''}</span>)}{!n.alloc && <b style={{ color: 'var(--text)' }}>{state.settings.orgName}</b>}</div>
+                          {level === 'all' && <div className="mt-4 muted">{[...n.path, n.owner.name].filter(Boolean).join(' › ')}</div>}
                         </div>
                     </td>
                     )}
@@ -203,7 +180,6 @@ export default function Kpis() {
                     <td className="right mono small nowrap">{n.kpi.type === 'completion' ? 'Full' : valueLabel(n.kpi, left && n.alloc.targetBeforeLeave ? n.alloc.targetBeforeLeave : n.stats.target)}</td>
                     <td className="right mono small bold nowrap">{valueLabel(n.kpi, n.stats.current)}</td>
                     <td>{left ? <span className="tiny muted">closed</span> : <ScoreDot value={n.stats.progress} />}</td>
-                    <td className="right tiny nowrap">{n.lastUpdate ? fmtShortDate(n.lastUpdate) : <span className="muted">—</span>}</td>
                   </tr>
                 )
               })}

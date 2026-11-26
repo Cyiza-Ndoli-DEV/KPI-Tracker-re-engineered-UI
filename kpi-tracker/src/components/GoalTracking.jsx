@@ -5,7 +5,7 @@ import { Tabs, Progress, Badge, Avatar, Empty, toneFor, navigate, ScoreDot } fro
 import { LineChart, valueLabel } from './KpiWidgets'
 import { goalKpis, goalProgress, kpiProgress, currentPeriod, nodeStats, unitName, band, KPI_TYPES } from '../lib/calc'
 import { ownerOf } from '../lib/hierarchy'
-import { fmtPct, fmtDate, todayISO, minISO, sum } from '../lib/utils'
+import { fmtPct, todayISO, minISO, sum } from '../lib/utils'
 
 const LEVELS = [
   ['department', 'Departments', Building2],
@@ -57,7 +57,6 @@ export default function GoalTracking({ state, goal }) {
               <div><div className="k">Goal progress</div><div className="v" style={{ fontSize: 20, color: 'var(--blue-700)' }}>{fmtPct(now, 1)}</div></div>
               <div><div className="k">Last 30 days</div><div className="v" style={{ color: now - last30 > 0 ? 'var(--green)' : 'inherit' }}>{now - last30 >= 0 ? '+' : ''}{fmtPct(now - last30, 1)}</div></div>
               <div><div className="k">Band</div><div className="v"><Badge tone={band(state, now).tone}>{band(state, now).label}</Badge></div></div>
-              <div><div className="k">Last result</div><div className="v">{dates.length ? fmtDate(dates[dates.length - 1]) : '—'}</div></div>
             </div>
             <div className="small semi mt-8">Achievement per KPI</div>
             {kpis.map((k) => {

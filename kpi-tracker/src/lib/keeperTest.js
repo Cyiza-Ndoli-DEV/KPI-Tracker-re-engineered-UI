@@ -6,9 +6,10 @@ export const keeperCriteria = [
 
 export const keeperResponses = ['Yes', 'Maybe', 'No']
 export const keeperQuestion = 'If I am leaving now, how hard would you fight for me to stay? Why?'
+export const retentionKey = 'retention'
 
 export function keeperItems(state) {
-  return [...keeperCriteria, ...(state.keeperTestItems ?? [])]
+  return state.keeperTestFormItems ?? [...keeperCriteria, ...(state.keeperTestItems ?? []), [retentionKey, keeperQuestion]]
 }
 
 export function keeperReports(state, reviewerId) {
@@ -27,8 +28,7 @@ export function canSubmitKeeperTest(state, reviewerId) {
   return keeperReports(state, reviewerId).length > 0
 }
 
-export function validKeeperTest(items, answers, reasons, reason) {
-  return items.every(([key]) => keeperResponses.includes(answers?.[key]) &&
-    typeof reasons?.[key] === 'string' && reasons[key].trim().length > 0) &&
-    typeof reason === 'string' && reason.trim().length > 0
+export function validKeeperTest(items, answers, reasons) {
+  return items.length > 0 && items.every(([key]) => keeperResponses.includes(answers?.[key]) &&
+    typeof reasons?.[key] === 'string' && reasons[key].trim().length > 0)
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Avatar, Badge, Empty, Field, Modal } from '../components/ui'
 import { byId } from '../lib/calc'
-import { keeperItems, keeperQuestion } from '../lib/keeperTest'
+import { keeperItems, keeperQuestion, retentionKey } from '../lib/keeperTest'
 import { fmtDateTime } from '../lib/utils'
 import { useStore } from '../store'
 
@@ -38,13 +38,19 @@ export default function KeeperTestResponses({ cycle }) {
         )}
         {visible.length ? (
           <div className="scroll-x">
-            <table className="table">
-              <thead><tr><th scope="col">Employee</th><th scope="col">Team Lead</th><th scope="col">Last saved</th><th scope="col" className="right">Actions</th></tr></thead>
+            <table className="table" style={{ minWidth: 680 }}>
+              <colgroup><col style={{ width: '28%' }} /><col style={{ width: '24%' }} /><col style={{ width: '18%' }} /><col style={{ width: '18%' }} /><col style={{ width: '12%' }} /></colgroup>
+              <thead><tr><th scope="col">Employee</th><th scope="col">Team Lead</th><th scope="col" className="center">Retention response</th><th scope="col">Last saved</th><th scope="col" className="right">Actions</th></tr></thead>
               <tbody>{visible.map((review) => (
                 <tr key={`${review.reviewerId}:${review.staffId}`}>
-                  <td><div className="row gap-8 semi"><Avatar name={nameOf(review.staffId)} size="sm" />{nameOf(review.staffId)}{review.sample && <Badge>Sample</Badge>}</div></td>
+                  <td><div className="row gap-8 semi"><Avatar name={nameOf(review.staffId)} size="sm" />{nameOf(review.staffId)}</div></td>
                   <td>{nameOf(review.reviewerId)}</td>
-                  <td>{fmtDateTime(review.updatedAt)}</td>
+                  <td className="center">
+                    {review.answers[retentionKey]
+                      ? <Badge tone={answerTone[review.answers[retentionKey]]}>{review.answers[retentionKey]}</Badge>
+                      : <span className="muted">—</span>}
+                  </td>
+                  <td className="nowrap">{fmtDateTime(review.updatedAt)}</td>
                   <td className="right"><button type="button" className="btn secondary sm" aria-label={`View response for ${nameOf(review.staffId)} by ${nameOf(review.reviewerId)}`} onClick={() => setSelected(review)}>View response</button></td>
                 </tr>
               ))}</tbody>
@@ -67,10 +73,10 @@ export default function KeeperTestResponses({ cycle }) {
                 </dl>
               </section>
             ))}
-            <section className="card card-pad col gap-8">
+            {!selected.answers[retentionKey] && selected.reason && <section className="card card-pad col gap-8">
               <h3>{keeperQuestion}</h3>
-              <div style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{selected.reason || 'No response recorded'}</div>
-            </section>
+              <div style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{selected.reason}</div>
+            </section>}
           </div>
         </Modal>
       )}

@@ -6,7 +6,7 @@ import { AllocationTree, AddMemberModal, UpdateModal, RestartModal, ReuseModal, 
 import { LeaverModal, EditKpiModal, EditSharesModal } from '../components/ChangeModals'
 import LevelTabs from '../components/LevelTabs'
 import { byId, kpiPeriods, currentPeriod, nodeStats, unitName, lockInfo, progressSeries, KPI_TYPES, childAllocations, cumulativeAt } from '../lib/calc'
-import { fmtRange, fmtPct, fmtDate, fmtDateTime, daysBetween } from '../lib/utils'
+import { fmtRange, fmtPct, fmtDate, fmtDateTime } from '../lib/utils'
 
 export default function KpiDetail({ id, query }) {
   const { state, resetPeriod } = useStore()
@@ -144,14 +144,13 @@ export default function KpiDetail({ id, query }) {
         )}
         {tab === 'periods' && (
           <table className="table">
-            <thead><tr><th>Period</th><th>Dates</th><th className="right">Target</th><th className="right">Final / current</th><th style={{ width: 90 }}>Progress</th><th>Status</th><th /></tr></thead>
+            <thead><tr><th>Period</th><th className="right">Target</th><th className="right">Final / current</th><th style={{ width: 90 }}>Progress</th><th>Status</th><th /></tr></thead>
             <tbody>
               {[...periods].reverse().map((p) => {
                 const s = nodeStats(state, kpi, p, null)
                 return (
                   <tr key={p.id}>
-                    <td className="bold">Period {p.index}</td>
-                    <td className="small">{fmtRange(p.startDate, p.closedAt || p.endDate)}<div className="tiny muted">{daysBetween(p.startDate, p.closedAt || p.endDate)} days</div></td>
+                    <td className="small nowrap">{fmtRange(p.startDate, p.closedAt || p.endDate)}</td>
                     <td className="right mono">{kpi.type === 'completion' ? 'Full' : valueLabel(kpi, p.target)}</td>
                     <td className="right mono">{valueLabel(kpi, s.current)}</td>
                     <td><ScoreDot value={s.progress} /></td>

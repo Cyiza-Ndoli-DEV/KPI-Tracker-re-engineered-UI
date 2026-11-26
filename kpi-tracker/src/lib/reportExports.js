@@ -20,7 +20,6 @@ const personRow = (r, i) => ({
   Band: r.band.label,
   'Weakest KPI': r.worst ? `${r.worst.kpi.name} (${round(r.worst.stats.progress, 0)}%)` : '',
   Results: r.updates,
-  'Last result': r.lastUpdate || 'never',
   'Not updated': r.stale ? 'Yes' : '',
 })
 
@@ -79,7 +78,7 @@ export function exportPersonReport(state, cycle, person, asOf, { ownOnly = false
     { Item: 'Org Fit %', Value: sc.orgFit ?? 'pending' },
     { Item: 'Final score %', Value: pct(sc.final) },
   ])
-  sheet(wb, 'KPIs', rep.items.map((it) => ({ ...(ownOnly ? {} : { Goal: it.goal.name }), KPI: it.kpi.name, Type: KPI_TYPES[it.kpi.type].label, Target: it.kpi.type === 'completion' ? 100 : round(it.stats.target, 2), Actual: round(it.stats.current, 2), 'Achieved %': round(it.stats.progress, 1), Results: it.count, 'First result': it.first || '', 'Last result': it.last || '', 'Avg days between results': it.avgGap === null ? '' : round(it.avgGap, 1), 'Days since last': it.since ?? '' })))
+  sheet(wb, 'KPIs', rep.items.map((it) => ({ ...(ownOnly ? {} : { Goal: it.goal.name }), KPI: it.kpi.name, Type: KPI_TYPES[it.kpi.type].label, Target: it.kpi.type === 'completion' ? 100 : round(it.stats.target, 2), Actual: round(it.stats.current, 2), 'Achieved %': round(it.stats.progress, 1), Results: it.count, 'First result': it.first || '', 'Avg days between results': it.avgGap === null ? '' : round(it.avgGap, 1), 'Days since last': it.since ?? '' })))
   sheet(wb, 'Performance records', rep.records.map((r) => ({ Date: r.u.date, KPI: r.kpi.name, Entered: r.kpi.type === 'completion' ? `${r.u.completion} ${r.u.value}%` : r.u.value, 'Running total / value': r.total, Submitted: r.u.submittedAt.slice(0, 16).replace('T', ' '), Edited: r.u.editedAt ? r.u.editedAt.slice(0, 10) : '' })))
   XLSX.writeFile(wb, `Performance report ${person.name} ${cycle.name} ${asOf}.xlsx`)
 }
@@ -97,13 +96,13 @@ export function exportFullReport(state, cycle, asOf, dept, filter, data) {
     { Item: 'KPI filter', Value: filter.kpiId ? byId(state.kpis, filter.kpiId)?.name : 'All' },
     ...goals.map((g) => ({ Item: `Goal: ${g.name}`, Value: `${round(goalProgress(state, g, asOf), 1)}%` })),
   ])
-  const unit = (rows) => rows.map((r, i) => ({ Rank: i + 1, Name: r.name, Department: r.dept?.name || '', 'Head / lead': r.lead?.name || '', People: r.people, KPIs: r.items.length, 'Score %': pct(r.score), Band: r.band.label, 'Weakest KPI': r.worst ? `${r.worst.kpi.name} (${round(r.worst.stats.progress, 0)}%)` : '', Results: r.updates, 'Last result': r.lastUpdate || '' }))
+  const unit = (rows) => rows.map((r, i) => ({ Rank: i + 1, Name: r.name, Department: r.dept?.name || '', 'Head / lead': r.lead?.name || '', People: r.people, KPIs: r.items.length, 'Score %': pct(r.score), Band: r.band.label, 'Weakest KPI': r.worst ? `${r.worst.kpi.name} (${round(r.worst.stats.progress, 0)}%)` : '', Results: r.updates }))
   sheet(wb, 'Departments', unit(data.departments))
   sheet(wb, 'Teams', unit(data.teams))
   sheet(wb, 'Individuals', data.people.map(personRow))
   sheet(wb, 'Target vs actual', kpiLines(data.people))
   sheet(wb, 'Available for PIP', data.pip.map(personRow))
-  sheet(wb, 'Not updated', data.stale.map((r) => ({ Person: r.name, Department: r.dept?.name, 'Last result': r.lastUpdate || 'never', 'Days since': r.since ?? '' })))
+  sheet(wb, 'Not updated', data.stale.map((r) => ({ Person: r.name, Department: r.dept?.name, 'Days since': r.since ?? '' })))
   sheet(wb, 'Without KPIs', data.unassigned.map((s) => ({ Person: s.name, Title: s.title, Department: byId(state.departments, s.departmentId)?.name, Team: byId(state.teams, s.teamId)?.name || '', Joined: s.joinedDate })))
   XLSX.writeFile(wb, `KPI report ${cycle.name} as of ${asOf}.xlsx`)
 }

@@ -25,11 +25,11 @@ export default function GoalsTable({ goals, deep = true }) {
     setAll(goalIds, RANK[v] >= RANK.kpi)
     setAll(kpiIds, RANK[v] >= RANK.department)
   }
-  const allOpen = deep && kpiIds.length > 0 && kpiIds.every(isOpen) && goalIds.every(isOpen)
+  const allOpen = goalIds.every(isOpen) && (!deep || kpiIds.every(isOpen))
   return (
     <>
       <div className="row table-toolbar">
-        {deep ? <DepthControl value={depthTo} onChange={showTo} /> : <span className="small muted">Goal → KPIs</span>}
+        {deep && <DepthControl value={depthTo} onChange={showTo} />}
         <div className="spacer" />
         <button className="btn ghost sm" onClick={() => (allOpen ? setAll([...goalIds, ...kpiIds], false) : setAll([...goalIds, ...(deep ? kpiIds : [])], true))}>
           {allOpen ? <><ChevronsDownUp size={14} /> Collapse all</> : <><ChevronsUpDown size={14} /> Expand all</>}
@@ -39,7 +39,7 @@ export default function GoalsTable({ goals, deep = true }) {
         <colgroup><col style={{ width: '30%' }} /><col style={{ width: '8%' }} /><col style={{ width: '9%' }} /><col style={{ width: '11%' }} /><col style={{ width: '13%' }} /><col style={{ width: '12%' }} /><col style={{ width: '8%' }} /><col style={{ width: '9%' }} /></colgroup>
         <thead>
           <tr>
-            <th>Goal / KPI / contributor</th>
+            <th>{deep ? 'Goal / KPI / contributor' : 'Goal / KPI'}</th>
             <th>Type</th>
             <th>Status</th>
             <th>Period</th>
@@ -91,7 +91,7 @@ export default function GoalsTable({ goals, deep = true }) {
                         </td>
                         <td className="small muted">KPI · {KPI_TYPES[k.type].label}</td>
                         <td />
-                        <td className="tiny muted">{per ? <>{fmtRange(per.startDate, per.endDate)}<div>period {per.index}</div></> : '—'}</td>
+                        <td className="tiny muted">{per ? fmtRange(per.startDate, per.endDate) : '—'}</td>
                         <td className="right small nowrap"><b>{k.weight}%</b> <span className="muted">to goal</span></td>
                         <td className="right mono small nowrap">{valueLabel(k, kp.current)} / {k.type === 'completion' ? '100%' : valueLabel(k, kp.target)}</td>
                         <td><ScoreDot value={kp.progress} /></td>

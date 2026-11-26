@@ -3,7 +3,7 @@ import { ChevronRight, ChevronDown, Target, Building2, UsersRound, User, Gauge }
 import { useStore } from '../store'
 import { Avatar, Progress, navigate, toneFor, ScoreDot } from './ui'
 import { byId, childAllocations, nodeStats, unitName } from '../lib/calc'
-import { fmtPct, fmtShortDate, round, sum } from '../lib/utils'
+import { fmtPct, fmtRange, round, sum } from '../lib/utils'
 import { valueLabel } from './KpiWidgets'
 
 const LVL_ICON = { organization: Target, department: Building2, team: UsersRound, individual: User }
@@ -63,7 +63,6 @@ export function AllocRows({ kpi, period, indent, state: st, maxLevel = 'individu
     const person = a.level === 'individual' ? byId(state.staff, a.unitId) : null
     const Icon = LVL_ICON[a.level]
     const allocated = kpi.type === 'sum' && kids.length ? sum(kids.map((k) => k.percent || 0)) : null
-    const late = a.joinedDate && a.joinedDate > period.startDate
     return (
       <tr key={a.id} className={`alloc-row lvl-${a.level}`} onClick={() => navigate(`/kpis/${kpi.id}`)}>
         <td>
@@ -78,7 +77,7 @@ export function AllocRows({ kpi, period, indent, state: st, maxLevel = 'individu
         </td>
         <td className="tiny muted">{LVL_LABEL[a.level]}</td>
         <td />
-        <td className="tiny muted nowrap">{late ? `joined ${fmtShortDate(a.joinedDate)}` : ''}</td>
+        <td className="tiny muted nowrap">{fmtRange(a.startDate, a.endDate)}</td>
         <td className="right small mono nowrap">{kpi.type === 'sum' ? fmtPct(a.percent, 2) : <span className="muted">same</span>}</td>
         <td className="right small mono nowrap">{valueLabel(kpi, stats.current)} / {kpi.type === 'completion' ? '100%' : valueLabel(kpi, stats.target)}</td>
         <td><ScoreDot value={stats.progress} /></td>

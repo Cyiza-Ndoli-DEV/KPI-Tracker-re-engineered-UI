@@ -31,7 +31,6 @@ export default function PersonReport({ id }) {
   const pip = sc.final !== null && sc.final < (state.settings.pipBelow ?? 50)
   const sel = rep.items.find((it) => it.alloc.id === kpiSel) || rep.items[0]
   const allUps = rep.items.flatMap((it) => it.updates)
-  const lastAll = allUps.map((u) => u.date).sort().slice(-1)[0]
   const members = sc.isLead ? teamMembersOf(state, id, cycle.id) : []
   // update frequency points (per day or week)
   const freq = {}
@@ -72,7 +71,6 @@ export default function PersonReport({ id }) {
                 <div><div className="k">Final score</div><div className="v" style={{ color: 'var(--blue-700)' }}>{fmtPct(sc.final, 1)}</div></div>
                 <div><div className="k">KPIs held</div><div className="v">{rep.items.length}</div></div>
                 <div><div className="k">Results recorded</div><div className="v">{allUps.length}</div></div>
-                <div><div className="k">Last result</div><div className="v">{lastAll ? fmtDate(lastAll) : 'never'}</div></div>
                 <div><div className="k">Updates every</div><div className="v">{gaps.length ? `${round(gaps.reduce((a, c) => a + c, 0) / gaps.length, 0)} days on average` : '—'}</div></div>
               </div>
             </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Lock, PencilLine, Plus, Trash2 } from 'lucide-react'
+import { PencilLine, Plus, Trash2 } from 'lucide-react'
 import { Badge, Field, Modal, useFeedback } from '../components/ui'
-import { keeperCriteria, keeperItems, keeperQuestion } from '../lib/keeperTest'
+import { keeperCriteria, keeperItems, retentionKey } from '../lib/keeperTest'
 import { useStore } from '../store'
 
 export default function KeeperTestSettings() {
@@ -45,22 +45,17 @@ export default function KeeperTestSettings() {
           <thead><tr><th scope="col">Item</th><th scope="col">Type</th><th scope="col">Required response</th><th scope="col" className="right">Actions</th></tr></thead>
           <tbody>
             {items.map(([key, item]) => {
-              const core = keeperCriteria.some(([id]) => id === key)
+              const core = key === retentionKey || keeperCriteria.some(([id]) => id === key)
               return <tr key={key}>
                 <td className="semi">{item}</td>
                 <td>{core ? <Badge tone="blue">Core</Badge> : <Badge>Additional</Badge>}</td>
                 <td>Yes / Maybe / No and a reason</td>
                 <td className="right">
-                  <ItemActions item={item} locked={core} onEdit={() => setEditor({ id: key, label: item })} onDelete={() => remove(key, item)} />
+                  <ItemActions item={item} onEdit={() => setEditor({ id: key, label: item })} onDelete={() => remove(key, item)} />
                 </td>
               </tr>
             })}
-            <tr>
-              <td className="semi">{keeperQuestion}</td>
-              <td><Badge tone="blue">Core</Badge></td>
-              <td>Written response</td>
-              <td className="right"><ItemActions item={keeperQuestion} locked /></td>
-            </tr>
+            {!items.length && <tr><td colSpan={4} className="muted">No Keeper Test items</td></tr>}
           </tbody>
         </table>
       </div>
@@ -81,17 +76,11 @@ export default function KeeperTestSettings() {
   )
 }
 
-function ItemActions({ item, locked, onEdit, onDelete }) {
+function ItemActions({ item, onEdit, onDelete }) {
   return (
     <div className="row gap-6" style={{ justifyContent: 'flex-end' }}>
-      {locked ? (
-        <span className="row muted" role="img" aria-label="Fixed core item" title="Fixed core item"><Lock size={16} aria-hidden="true" /></span>
-      ) : (
-        <>
           <button type="button" className="btn secondary icon sm" title="Edit item" aria-label={`Edit ${item}`} onClick={onEdit}><PencilLine size={16} aria-hidden="true" /></button>
           <button type="button" className="btn danger icon sm" title="Delete item" aria-label={`Delete ${item}`} onClick={onDelete}><Trash2 size={16} aria-hidden="true" /></button>
-        </>
-      )}
     </div>
   )
 }

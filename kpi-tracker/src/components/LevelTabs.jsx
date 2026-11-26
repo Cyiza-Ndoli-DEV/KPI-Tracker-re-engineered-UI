@@ -40,7 +40,7 @@ export function NodeTable({ state, kpi, rows, highlight, title, parentTarget, sh
     <div className="scroll-x">
       <div className="small muted" style={{ padding: '10px 20px 0' }}>{title}{isSum && parentTarget ? ` · sharing ${valueLabel(kpi, parentTarget)}` : ''}</div>
       <table className="table">
-        <thead><tr><th>Owner</th>{showParent && <th>Part of</th>}<th>Level</th><th className="right">Share</th><th className="right">Target</th><th className="right">Achieved</th><th style={{ width: 90 }}>Progress</th><th className="right">Last result</th></tr></thead>
+        <thead><tr><th>Owner</th>{showParent && <th>Part of</th>}<th>Level</th><th className="right">Share</th><th className="right">Target</th><th className="right">Achieved</th><th style={{ width: 90 }}>Progress</th></tr></thead>
         <tbody>
           {rows.map((a) => {
             const cn = nodeFor(state, kpi, a)
@@ -54,7 +54,6 @@ export function NodeTable({ state, kpi, rows, highlight, title, parentTarget, sh
                 <td className="right mono small">{kpi.type === 'completion' ? 'Full' : valueLabel(kpi, a.leftDate && a.targetBeforeLeave ? a.targetBeforeLeave : cn.stats.target)}</td>
                 <td className="right mono small bold">{valueLabel(kpi, cn.stats.current)}</td>
                 <td>{a.leftDate ? <span className="tiny muted">closed</span> : <ScoreDot value={cn.stats.progress} />}</td>
-                <td className="right tiny">{cn.lastUpdate ? fmtDate(cn.lastUpdate) : '—'}</td>
               </tr>
             )
           })}

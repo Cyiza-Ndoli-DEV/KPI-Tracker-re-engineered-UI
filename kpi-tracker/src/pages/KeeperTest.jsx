@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ClipboardCheck } from 'lucide-react'
 import { Badge, Empty, Field, useFeedback } from '../components/ui'
 import { currentUserId, useStore } from '../store'
-import { keeperItems, keeperQuestion, keeperReports, keeperResponses, validKeeperTest } from '../lib/keeperTest'
+import { keeperItems, keeperReports, keeperResponses, retentionKey, validKeeperTest } from '../lib/keeperTest'
 
 export default function KeeperTest() {
   const { state } = useStore()
@@ -35,15 +35,14 @@ function KeeperTestForm({ person, review }) {
   const { state, saveKeeperTest } = useStore()
   const { toast } = useFeedback()
   const [answers, setAnswers] = useState(review?.answers ?? {})
-  const [reasons, setReasons] = useState(review?.reasons ?? {})
-  const [reason, setReason] = useState(review?.reason ?? '')
+  const [reasons, setReasons] = useState({ [retentionKey]: review?.reason ?? '', ...review?.reasons })
   const items = keeperItems(state)
-  const valid = validKeeperTest(items, answers, reasons, reason)
+  const valid = validKeeperTest(items, answers, reasons)
 
   function submit(event) {
     event.preventDefault()
     if (!valid) return
-    saveKeeperTest(state.viewCycleId, person.id, answers, reasons, reason)
+    saveKeeperTest(state.viewCycleId, person.id, answers, reasons)
     toast('Keeper Test saved.')
   }
 
@@ -70,9 +69,7 @@ function KeeperTestForm({ person, review }) {
           </div>
         ))}
       </div>
-      <Field label={keeperQuestion} required>
-        <textarea className="textarea" rows={4} required value={reason} onChange={(event) => setReason(event.target.value)} />
-      </Field>
+      {!items.length && <Empty title="No Keeper Test items configured" />}
       <div><button type="submit" className="btn primary" disabled={!valid}>Save Keeper Test</button></div>
     </form>
   )

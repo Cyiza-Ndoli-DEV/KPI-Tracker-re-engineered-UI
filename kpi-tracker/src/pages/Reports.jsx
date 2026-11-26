@@ -331,7 +331,7 @@ function LevelReport({ rows, level, onExport }) {
   const bands = bandsOf(state)
   const Icon = L.icon
   if (!rows.length) return <div className="card"><Empty icon={<Icon />} title={`No ${L.one} holds a KPI in this selection`} /></div>
-  const cols = isPerson ? 9 : onExport ? 9 : 8
+  const cols = isPerson || onExport ? 8 : 7
 
   return (
     <div className="col gap-16">
@@ -365,7 +365,6 @@ function LevelReport({ rows, level, onExport }) {
               <th style={{ width: 150 }}>{isPerson ? 'Final score' : 'Score'}</th>
               <th>Band</th>
               <th>Weakest KPI</th>
-              <th className="right">Last result</th>
               {!isPerson && onExport && <th />}
             </tr>
           </thead>
@@ -394,10 +393,6 @@ function LevelReport({ rows, level, onExport }) {
                     <td><PctBar value={r.score} /></td>
                     <td><Badge tone={r.band.tone}>{r.band.label}</Badge></td>
                     <td className="tiny">{r.worst ? <><span style={{ color: 'var(--red)' }}>▼</span> {r.worst.kpi.name} <b>{fmtPct(r.worst.stats.progress, 0)}</b></> : '—'}</td>
-                    <td className="right tiny nowrap">
-                      {r.lastUpdate ? fmtShortDate(r.lastUpdate) : <span style={{ color: 'var(--red)' }}>never</span>}
-                      <div>{r.stale ? <span className="badge amber" style={{ padding: '0 6px' }}>not updated{r.since !== null ? ` ${r.since}d` : ''}</span> : <span className="muted">{r.updates} result{r.updates === 1 ? '' : 's'}</span>}</div>
-                    </td>
                     {!isPerson && onExport && <td className="right" onClick={(e) => e.stopPropagation()}><button className="btn soft xs no-print" onClick={() => onExport(r.unit)}><FileSpreadsheet size={12} /> Full report</button></td>}
                   </tr>
                   {isOpen && (
@@ -549,13 +544,12 @@ function Compliance({ data, asOf, cycle, dept }) {
           {data.stale.length === 0 ? <Empty title="Everyone is up to date" /> : (
             <div className="scroll-x">
             <table className="table">
-              <thead><tr><th>Person</th><th>Department / team</th><th className="right">Last result</th><th className="right">Days since</th><th className="no-print">Reminder</th></tr></thead>
+              <thead><tr><th>Person</th><th>Department / team</th><th className="right">Days since</th><th className="no-print">Reminder</th></tr></thead>
               <tbody>
                 {data.stale.map((r) => (
                   <tr key={r.unit.id} className="clickable" onClick={() => navigate(`/reports/person/${r.unit.id}`)}>
                     <td><div className="row gap-6"><Avatar name={r.name} size="sm" /><span className="semi small">{r.name}</span></div></td>
                     <td className="small">{r.dept?.name}{r.team ? ` · ${r.team.name}` : ''}</td>
-                    <td className="right small">{r.lastUpdate ? fmtDate(r.lastUpdate) : <span className="badge red">never</span>}</td>
                     <td className="right mono bold" style={{ color: r.since === null || r.since > 60 ? 'var(--red)' : 'var(--amber)' }}>{r.since ?? '—'}</td>
                     <td className="no-print" onClick={(e) => e.stopPropagation()}>
                       {canRemind(r.unit) && <button type="button" className="btn soft sm nowrap" aria-label={`Email reminder to ${r.name}`} onClick={() => setReminderId(r.unit.id)}><Mail size={14} /> Email reminder</button>}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Settings, Lock, Unlock, ScrollText, Database, RefreshCw, Undo2, Clock, ClipboardCheck } from 'lucide-react'
+import { Settings, Lock, Unlock, ScrollText, Undo2, Clock, ClipboardCheck } from 'lucide-react'
 import { useStore } from '../store'
 import { NumInput, Badge, Tabs, Empty, Avatar, useFeedback } from '../components/ui'
 import { valueLabel } from '../components/KpiWidgets'
@@ -10,8 +10,8 @@ import { byId, unitName } from '../lib/calc'
 import { fmtDate, fmtDateTime, timeAgo } from '../lib/utils'
 
 export default function Admin() {
-  const { state, grantEdit, revertEdit, rejectEdit, resetDemo } = useStore()
-  const { toast, confirm } = useFeedback()
+  const { state, grantEdit, revertEdit, rejectEdit } = useStore()
+  const { toast } = useFeedback()
   const [section, setSection] = useState('setup')
   const [tab, setTab] = useState('pending')
   const [extendDays, setExtendDays] = useState({})
@@ -34,7 +34,6 @@ export default function Admin() {
           { key: 'keeper-test', label: 'Keeper Test', icon: <ClipboardCheck size={15} /> },
           { key: 'requests', label: 'Edit requests', icon: <Lock size={15} />, count: pending.length || undefined },
           { key: 'audit', label: 'Audit log', icon: <ScrollText size={15} /> },
-          { key: 'system', label: 'HR sync & demo', icon: <Database size={15} /> },
         ]} />
       </div>
 
@@ -102,36 +101,6 @@ export default function Admin() {
       </div>
       )}
 
-      {section === 'system' && (
-      <div className="grid g-2">
-        <div className="card">
-          <div className="card-head"><Database size={18} color="var(--blue-600)" /><h3>Synced from Pahappa HR</h3><Badge tone="green" dot>mock sync</Badge></div>
-          <div className="card-body">
-            <div className="grid g-3">
-              <div className="stat" style={{ padding: 0 }}><div><div className="v">{state.departments.length}</div><div className="k">Departments</div></div></div>
-              <div className="stat" style={{ padding: 0 }}><div><div className="v">{state.teams.length}</div><div className="k">Teams</div></div></div>
-              <div className="stat" style={{ padding: 0 }}><div><div className="v">{state.staff.filter((s) => s.active !== false).length}</div><div className="k">Active staff</div></div></div>
-            </div>
-          </div>
-        </div>
-        <div className="card">
-          <div className="card-head"><RefreshCw size={18} color="var(--blue-600)" /><h3>Demo data</h3></div>
-          <div className="card-body">
-            <button
-              className="btn danger"
-              onClick={async () => {
-                if (await confirm({ title: 'Reset all demo data?', message: 'All changes made in this browser are discarded and the original sample data is restored.', okLabel: 'Reset demo', danger: true })) {
-                  resetDemo()
-                  toast('Demo data restored.')
-                }
-              }}
-            >
-              <RefreshCw size={15} /> Reset demo data
-            </button>
-          </div>
-        </div>
-      </div>
-      )}
     </div>
   )
 }

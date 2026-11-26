@@ -1,13 +1,13 @@
 // Mock data for the prototype. Departments, teams and staff mimic what is synced from Pahappa HR.
 
 import { assignedRatingSections, defaultRatingSetup, fitPoints, ratingHistory, ratingSection } from '../lib/orgFit'
-import { keeperCriteria, keeperReports } from '../lib/keeperTest'
+import { keeperCriteria, keeperQuestion, keeperReports, retentionKey } from '../lib/keeperTest'
 
 const at = (date, time = '10:00') => new Date(`${date}T${time}:00`).toISOString()
 
 const sampleKeeperTests = [
   {
-    reviewerId: 's-brian', staffId: 's-sarah', date: '2026-10-20',
+    reviewerId: 's-brian', staffId: 's-sarah', date: '2026-10-20', retention: 'Yes',
     answers: { competency: 'Yes', innovation: 'Yes', growth: 'Maybe' },
     reasons: {
       competency: 'Keeps client records current and follows through on open proposals.',
@@ -17,7 +17,7 @@ const sampleKeeperTests = [
     reason: 'I would make a strong effort to retain her. She earns client trust and shares approaches that help the whole team.',
   },
   {
-    reviewerId: 's-brian', staffId: 's-daniel', date: '2026-10-21',
+    reviewerId: 's-brian', staffId: 's-daniel', date: '2026-10-21', retention: 'Maybe',
     answers: { competency: 'Yes', innovation: 'No', growth: 'Maybe' },
     reasons: {
       competency: 'Prepares accurate proposals and reliably handles assigned accounts.',
@@ -27,7 +27,7 @@ const sampleKeeperTests = [
     reason: 'I would discuss what might make him stay. He provides steady account coverage and could take on more ownership.',
   },
   {
-    reviewerId: 's-grace', staffId: 's-brian', date: '2026-10-22',
+    reviewerId: 's-grace', staffId: 's-brian', date: '2026-10-22', retention: 'Yes',
     answers: { competency: 'Yes', innovation: 'Maybe', growth: 'Yes' },
     reasons: {
       competency: 'Runs regular pipeline reviews and resolves escalations promptly.',
@@ -40,20 +40,31 @@ const sampleKeeperTests = [
 
 export function addSampleKeeperTests(state) {
   const cycleId = 'c-2026'
-  if (state.sampleKeeperTestsAdded || !state.cycles.some((cycle) => cycle.id === cycleId)) return state
-  state.sampleKeeperTestsAdded = true
+  if (!state.cycles.some((cycle) => cycle.id === cycleId)) return state
 
-  for (const { reviewerId, staffId, date, ...response } of sampleKeeperTests) {
+  for (const { reviewerId, staffId, date, retention, ...response } of sampleKeeperTests) {
+    if (state.sampleKeeperTestsAdded) {
+      const saved = state.keeperTests?.[cycleId]?.[reviewerId]?.[staffId]
+      if (saved?.sample && !saved.answers[retentionKey]) {
+        saved.answers[retentionKey] = retention
+        saved.reasons[retentionKey] = saved.reason
+        saved.itemLabels[retentionKey] = keeperQuestion
+      }
+      continue
+    }
     if (!keeperReports(state, reviewerId).some((person) => person.id === staffId)) continue
     const cycle = (state.keeperTests ??= {})[cycleId] ??= {}
     const reviews = cycle[reviewerId] ??= {}
     reviews[staffId] ??= {
       ...structuredClone(response),
-      itemLabels: Object.fromEntries(keeperCriteria),
+      answers: { ...response.answers, [retentionKey]: retention },
+      reasons: { ...response.reasons, [retentionKey]: response.reason },
+      itemLabels: Object.fromEntries([...keeperCriteria, [retentionKey, keeperQuestion]]),
       updatedAt: at(date),
       sample: true,
     }
   }
+  state.sampleKeeperTestsAdded = true
   return state
 }
 

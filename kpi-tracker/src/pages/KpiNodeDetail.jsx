@@ -95,7 +95,6 @@ export default function KpiNodeDetail({ kpiId, allocId }) {
                 <div><div className="k">{isSum ? 'Still to do' : 'Gap to target'}</div><div className="v">{alloc.leftDate ? 'closed' : kpi.type === 'completion' ? `${fmtPct(Math.max(0, 100 - stats.current), 0)}` : valueLabel(kpi, Math.max(0, stats.target - stats.current))}</div></div>
                 <div><div className="k">{isSum ? `Contribution to ${n.parentName}` : 'Parent value'}</div><div className="v">{isSum ? (contribution === null ? '—' : `${fmtPct(contribution, 1)} of its result`) : valueLabel(kpi, n.parentStats.current)}</div></div>
                 <div><div className="k">Period</div><div className="v">{fmtRange(alloc.joinedDate || period.startDate, alloc.leftDate || period.endDate)}</div></div>
-                <div><div className="k">Last result</div><div className="v">{n.lastUpdate ? fmtDate(n.lastUpdate) : '—'} <span className="tiny muted">({n.updates})</span></div></div>
               </div>
             </div>
             <div className="col" style={{ minWidth: 210 }}>

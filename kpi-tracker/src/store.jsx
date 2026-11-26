@@ -5,7 +5,7 @@ import { uid, nowISO, todayISO, minISO, addDays, round, sum } from './lib/utils'
 import { byId, currentPeriod, childAllocations, allocationUpdates, unitName, kpiPeriods, cumulativeAt } from './lib/calc'
 import { assignedRatingSections, changedRatingSections, criterionPoints, defaultRatingSetup, fitPoints, ratingDate, ratingHistory, ratingSection, ratingSetupError, ratingStatus, removeLegacyKeeperRatings, validRatings } from './lib/orgFit'
 import { commitDraftToEntities, draftFromGoal } from './lib/draft'
-import { keeperItems, keeperReports, validKeeperTest } from './lib/keeperTest'
+import { keeperItems, keeperReports, retentionKey, validKeeperTest } from './lib/keeperTest'
 
 const VERSION = 9
 const KEY = `pahappa-kpi-prototype-v${VERSION}`
@@ -69,31 +69,35 @@ export function StoreProvider({ children }) {
       addKeeperTestItem: (label) => mutate((n) => {
         const name = label.trim()
         if (n.role !== 'admin' || !name || keeperItems(n).some(([, item]) => item.toLowerCase() === name.toLowerCase())) return
-        n.keeperTestItems ??= []
-        n.keeperTestItems.push([uid('kt'), name])
+        const items = keeperItems(n)
+        const retentionIndex = items.findIndex(([key]) => key === retentionKey)
+        n.keeperTestFormItems = items.slice()
+        n.keeperTestFormItems.splice(retentionIndex < 0 ? items.length : retentionIndex, 0, [uid('kt'), name])
       }),
       editKeeperTestItem: (id, label) => mutate((n) => {
-        const item = n.keeperTestItems?.find(([key]) => key === id)
+        const items = keeperItems(n)
+        const item = items.find(([key]) => key === id)
         const name = label.trim()
         if (n.role !== 'admin' || !item || !name ||
             keeperItems(n).some(([key, current]) => key !== id && current.toLowerCase() === name.toLowerCase())) return
         n.keeperTestPastLabels ??= {}
         n.keeperTestPastLabels[id] ??= item[1]
-        item[1] = name
+        n.keeperTestFormItems = items.map((entry) => entry[0] === id ? [id, name] : entry)
       }),
       deleteKeeperTestItem: (id) => mutate((n) => {
-        const item = n.keeperTestItems?.find(([key]) => key === id)
+        const items = keeperItems(n)
+        const item = items.find(([key]) => key === id)
         if (n.role !== 'admin' || !item) return
         n.keeperTestPastLabels ??= {}
         n.keeperTestPastLabels[id] ??= item[1]
-        n.keeperTestItems = n.keeperTestItems.filter(([key]) => key !== id)
+        n.keeperTestFormItems = items.filter(([key]) => key !== id)
       }),
-      saveKeeperTest: (cycleId, staffId, answers, reasons, reason) => mutate((n) => {
+      saveKeeperTest: (cycleId, staffId, answers, reasons) => mutate((n) => {
         const reviewerId = currentUserId(n)
         const items = keeperItems(n)
         if (!byId(n.cycles, cycleId) ||
             !keeperReports(n, reviewerId).some((person) => person.id === staffId) ||
-            !validKeeperTest(items, answers, reasons, reason)) return
+            !validKeeperTest(items, answers, reasons)) return
 
         n.keeperTests ??= {}
         const cycle = n.keeperTests[cycleId] ??= {}
@@ -103,7 +107,7 @@ export function StoreProvider({ children }) {
           answers: { ...previous?.answers, ...Object.fromEntries(items.map(([key]) => [key, answers[key]])) },
           reasons: { ...previous?.reasons, ...Object.fromEntries(items.map(([key]) => [key, reasons[key].trim()])) },
           itemLabels: { ...previous?.itemLabels, ...Object.fromEntries(items) },
-          reason: reason.trim(),
+          reason: previous?.reason,
           updatedAt: nowISO(),
         }
       }),
