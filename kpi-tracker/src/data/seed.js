@@ -1,6 +1,57 @@
 // Mock data for the prototype. Departments, teams and staff mimic what is synced from Pahappa HR.
 
+import { assignedRatingSections, defaultRatingSetup, fitPoints, ratingHistory, ratingSection } from '../lib/orgFit'
+
 const at = (date, time = '10:00') => new Date(`${date}T${time}:00`).toISOString()
+
+const sampleRatings = {
+  's-sarah': {
+    team: { 's-sarah': [4, 5, 4, 4, 4], 's-daniel': [5, 4, 4, 3, 4] },
+    beliefs: { 's-brian': [4, 4, 5, 4, 4], 's-grace': [4, 5, 4, 4, 3] },
+  },
+  's-daniel': {
+    team: { 's-daniel': [4, 4, 4, 3, 4], 's-sarah': [4, 4, 3, 4, 4] },
+    beliefs: { 's-brian': [3, 4, 3, 4, 4] },
+  },
+  's-aisha': {
+    team: { 's-aisha': [5, 5, 4, 4, 5], 's-patrick': [5, 4, 5, 4, 5] },
+    beliefs: { 's-moses': [5, 4, 5, 5, 4], 's-ruth': [4, 5, 5, 4, 5] },
+  },
+}
+
+export function addSampleRatings(state) {
+  const cycleId = 'c-2026'
+  if (state.sampleRatingsAdded || !state.cycles.some((cycle) => cycle.id === cycleId)) return state
+  state.sampleRatingsAdded = true
+  const history = [...ratingHistory(state, cycleId)]
+  const setup = state.orgFitSetup?.[cycleId] ?? defaultRatingSetup
+  const usesDefaultCategories = JSON.stringify(setup.categories) === JSON.stringify(defaultRatingSetup.categories)
+  const existing = state.orgFitSubmissions?.[cycleId]
+  for (const [staffId, sections] of Object.entries(sampleRatings)) {
+    if (existing?.[staffId] || history.some((entry) => entry.staffId === staffId)) continue
+    const employee = state.staff.find((person) => person.id === staffId)
+    const submissions = {}
+    for (const [section, reviewers] of Object.entries(sections)) {
+      for (const [reviewerId, ratings] of Object.entries(reviewers)) {
+        const reviewer = state.staff.find((person) => person.id === reviewerId)
+        if (!assignedRatingSections(defaultRatingSetup, state, reviewer, employee).includes(section)) continue
+        history.push({ month: '2026-10', staffId, section, reviewerId, category: ratingSection(defaultRatingSetup, section), ratings: ratings.slice() })
+        const rows = submissions[section] ??= {}
+        rows[reviewerId] = ratings.slice()
+      }
+    }
+    if (!usesDefaultCategories || !Object.keys(submissions).length) continue
+    const cycleSubmissions = (state.orgFitSubmissions ??= {})[cycleId] ??= {}
+    cycleSubmissions[staffId] = submissions
+    const points = fitPoints(setup, submissions, staffId)
+    if (points !== null) {
+      const scores = (state.orgFit ??= {})[cycleId] ??= {}
+      scores[staffId] = Number((points / 40 * 100).toFixed(2))
+    }
+  }
+  if (history.length) (state.orgFitRatingHistory ??= {})[cycleId] = history
+  return state
+}
 
 export const ROLES = {
   admin: { label: 'Admin', userId: 's-joyce' },
@@ -279,7 +330,7 @@ export function createSeed() {
     },
   ]
 
-  return {
+  return addSampleRatings({
     version: 9,
     settings: {
       orgName: 'Pahappa',
@@ -313,5 +364,5 @@ export function createSeed() {
     editRequests,
     audit,
     drafts,
-  }
+  })
 }

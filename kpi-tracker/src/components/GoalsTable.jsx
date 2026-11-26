@@ -62,7 +62,6 @@ export default function GoalsTable({ goals, deep = true }) {
                     <span className="goal-no">{i + 1}</span>
                     <div className="bold">{g.name}</div>
                   </div>
-                  {g.description && <div className="tiny muted" style={{ maxWidth: 380, marginLeft: 58 }}>{g.description}</div>}
                 </td>
                 <td><Badge tone="blue">{KPI_TYPES[g.type].label}</Badge></td>
                 <td><GoalStatus status={g.status} /></td>

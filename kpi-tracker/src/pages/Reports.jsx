@@ -131,7 +131,7 @@ function Overview({ data, cycle, asOf, go, filter }) {
   return (
     <div className="col gap-16">
       <div className="grid g-3">
-        <Stat icon={<Target size={20} />} v={fmtPct(avg(goals.map((g) => goalProgress(state, g, asOf))), 1)} k="Average goal progress" sub={`${goals.length} goals, each tracked on its own`} onClick={() => navigate('/goals')} />
+        <Stat icon={<Target size={20} />} v={fmtPct(avg(goals.map((g) => goalProgress(state, g, asOf))), 1)} k="Average goal progress" sub={`${goals.length} goals`} onClick={() => navigate('/goals')} />
         <Stat icon={<Gauge size={20} />} v={fmtPct(avg(data.kpis.map((k) => k.stats.progress)), 1)} k="Average KPI achievement" sub={`${data.kpis.length} KPIs`} onClick={() => navigate('/kpis')} />
         <Stat icon={<Users size={20} />} v={data.people.length} k="People contributing" sub={`average final score ${fmtPct(avg(data.people.map((p) => p.score || 0)), 1)}`} onClick={() => go('individuals')} />
         <Stat icon={<LifeBuoy size={20} />} v={data.pip.length} k="Available for PIP" sub={`final score below ${pipBelow}%`} tone={data.pip.length ? 'red' : ''} onClick={() => go('individuals')} />
@@ -215,7 +215,7 @@ function Overview({ data, cycle, asOf, go, filter }) {
           <CardLink onClick={() => go('departments')}>Department report</CardLink>
         </div>
         <PeopleList title="Top performers" icon={<TrendingUp size={17} color="var(--green)" />} rows={data.people.slice(0, 6)} more="Member ranking" onMore={() => go('ranking')} />
-        <PeopleList title="Available for PIP" icon={<LifeBuoy size={17} color="var(--red)" />} rows={data.pip.slice(0, 6)} empty={`No one has a final score below ${pipBelow}%.`} more="All individuals" onMore={() => go('individuals')} sub={`Final score below ${pipBelow}% (set in Admin → Set up)`} />
+        <PeopleList title="Available for PIP" icon={<LifeBuoy size={17} color="var(--red)" />} rows={data.pip.slice(0, 6)} empty={`No one has a final score below ${pipBelow}%.`} more="All individuals" onMore={() => go('individuals')} sub={`Final score below ${pipBelow}%`} />
       </div>
 
       <div className="grid g-2" style={{ alignItems: 'start' }}>

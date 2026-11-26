@@ -115,7 +115,7 @@ export default function KpiNodeDetail({ kpiId, allocId }) {
         <div className="card-body col gap-6">
           <div className="chain-row goal" onClick={() => navigate(`/goals/${goal.id}`)}>
             <span className="lvl kpi"><Gauge size={13} /></span>
-            <div className="spacer"><div className="semi small">Goal: {goal.name}</div><div className="tiny muted">tracked on its own · 100% · {kpi.name} carries {kpi.weight}% of it</div></div>
+            <div className="spacer"><div className="semi small">{goal.name}</div><div className="tiny muted">Contribution to goal: {kpi.weight}%</div></div>
           </div>
           <ArrowDown size={14} className="chain-arrow" />
           <ChainRow level="organization" name={`${state.settings.orgName} — ${kpi.name}`} sub="Organization" share="100%" s={org} to={`/kpis/${kpi.id}`} depth={0} />

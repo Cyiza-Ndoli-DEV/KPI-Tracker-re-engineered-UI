@@ -17,6 +17,7 @@ import Drafts from './pages/Drafts'
 import MyKpis from './pages/MyKpis'
 import Admin from './pages/Admin'
 import OrgFit from './pages/OrgFit'
+import KeeperTest from './pages/KeeperTest'
 import { ShieldAlert } from 'lucide-react'
 import { isEmployeeRole } from './data/seed'
 import './styles.css'
@@ -30,14 +31,12 @@ function Router() {
   const navItem = NAV.find((n) => n.to && n.to !== '/' && route.path.startsWith(n.to))
   const ownShare = a === 'kpis' && route.parts[2] && state.allocations.find((x) => x.id === route.parts[2])?.unitId === userId
   const otherPersonReport = employee && a === 'reports' && b === 'person' && route.parts[2] !== userId
-  const blocked = otherPersonReport || (navItem && !allowed(navItem, state.role) && !ownShare)
+  const blocked = otherPersonReport || (navItem && !allowed(navItem, state) && !ownShare)
 
   let page
   if (blocked)
     page = (
-      <Empty icon={<ShieldAlert />} title="Not available for this role" action={<Link to="/" className="btn primary">Back to dashboard</Link>}>
-        Switch the role in the header to see this screen.
-      </Empty>
+      <Empty icon={<ShieldAlert />} title="Access restricted" action={<Link to="/" className="btn primary">Back to dashboard</Link>} />
     )
   else if (!a) page = <Dashboard />
   else if (a === 'cycles' && b === 'new') page = <CycleForm key="new" />
@@ -56,6 +55,7 @@ function Router() {
   else if (a === 'reports' && b === 'person' && route.parts[2]) page = <PersonReport key={route.parts[2]} id={route.parts[2]} />
   else if (a === 'reports') page = <Reports key={`${currentUserId(state)}-${state.viewCycleId}-${route.query.tab || ''}`} query={route.query} />
   else if (a === 'org-fit') page = <OrgFit />
+  else if (a === 'keeper-test') page = <KeeperTest key={`${userId}-${state.viewCycleId}`} />
   else if (a === 'admin') page = <Admin />
   else page = <Empty title="Page not found" action={<Link to="/" className="btn primary">Go home</Link>} />
 

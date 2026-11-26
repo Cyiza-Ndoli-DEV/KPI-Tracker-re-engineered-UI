@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Settings, Lock, Unlock, ScrollText, Database, RefreshCw, Undo2, Clock, Users } from 'lucide-react'
+import { Settings, Lock, Unlock, ScrollText, Database, RefreshCw, Undo2, Clock, ClipboardCheck } from 'lucide-react'
 import { useStore } from '../store'
 import { NumInput, Badge, Tabs, Empty, Avatar, useFeedback } from '../components/ui'
 import { valueLabel } from '../components/KpiWidgets'
 import { AuditTable } from './KpiDetail'
 import { SetupPanel } from './AdminSetup'
+import KeeperTestSettings from './KeeperTestSettings'
 import { byId, unitName } from '../lib/calc'
 import { fmtDate, fmtDateTime, timeAgo } from '../lib/utils'
 
@@ -30,6 +31,7 @@ export default function Admin() {
       <div className="card" style={{ padding: '0 12px' }}>
         <Tabs value={section} onChange={setSection} tabs={[
           { key: 'setup', label: 'Set up', icon: <Settings size={15} /> },
+          { key: 'keeper-test', label: 'Keeper Test', icon: <ClipboardCheck size={15} /> },
           { key: 'requests', label: 'Edit requests', icon: <Lock size={15} />, count: pending.length || undefined },
           { key: 'audit', label: 'Audit log', icon: <ScrollText size={15} /> },
           { key: 'system', label: 'HR sync & demo', icon: <Database size={15} /> },
@@ -37,6 +39,7 @@ export default function Admin() {
       </div>
 
       {section === 'setup' && <SetupPanel />}
+      {section === 'keeper-test' && <KeeperTestSettings />}
 
       {section === 'requests' && (<>
       <div className="card">

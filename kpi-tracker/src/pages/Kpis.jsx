@@ -167,7 +167,6 @@ export default function Kpis() {
                     {n.owner.person ? <Avatar name={n.owner.name} size="sm" /> : <span className={`lvl ${n.level}`}><Icon size={13} /></span>}
                     <div style={{ minWidth: 0 }}>
                       <div className="semi small nowrap">{n.owner.name}{left && <Badge tone="red">left {fmtShortDate(left)}</Badge>}</div>
-                      <div className="tiny muted nowrap">{n.owner.sub}</div>
                     </div>
                   </div>
                 )
@@ -182,12 +181,12 @@ export default function Kpis() {
                           {n.alloc ? ownerCell : (
                             <div className="row gap-6">
                               <span className="lvl kpi"><Gauge size={14} /></span>
-                              <div><div className="bold">{n.kpi.name}</div><div className="tiny muted kpi-sub"><span className="nowrap">{KPI_TYPES[n.kpi.type].label} · {n.kpi.weight}% of goal</span><Link to={`/goals/${n.goal.id}`} className="goal-chip sm" onClick={(e) => e.stopPropagation()}>{n.goal.name}</Link></div></div>
+                              <div className="bold">{n.kpi.name}</div>
                             </div>
                           )}
                         </div>
                       ) : (
-                        <div><div className="semi">{n.kpi.name}</div><div className="tiny muted">{KPI_TYPES[n.kpi.type].label}</div></div>
+                        <div className="semi">{n.kpi.name}</div>
                       )}
                     </td>
                     {!treeMode && <td>{n.alloc ? ownerCell : <span className="small semi">{state.settings.orgName}</span>}</td>}
@@ -200,11 +199,11 @@ export default function Kpis() {
                         </div>
                     </td>
                     )}
-                    <td className="right small nowrap">{n.alloc ? (n.kpi.type === 'sum' ? <><b>{fmtPct(n.alloc.percent, 2)}</b><div className="tiny muted">of {n.parentName}</div></> : <span className="muted">same target</span>) : <span className="muted">—</span>}</td>
+                    <td className="right small nowrap">{n.alloc ? (n.kpi.type === 'sum' ? <b>{fmtPct(n.alloc.percent, 2)}</b> : <span className="muted">same target</span>) : <span className="muted">—</span>}</td>
                     <td className="right mono small nowrap">{n.kpi.type === 'completion' ? 'Full' : valueLabel(n.kpi, left && n.alloc.targetBeforeLeave ? n.alloc.targetBeforeLeave : n.stats.target)}</td>
                     <td className="right mono small bold nowrap">{valueLabel(n.kpi, n.stats.current)}</td>
                     <td>{left ? <span className="tiny muted">closed</span> : <ScoreDot value={n.stats.progress} />}</td>
-                    <td className="right tiny nowrap">{n.lastUpdate ? fmtShortDate(n.lastUpdate) : <span className="muted">—</span>}<div className="muted">{n.updates} result{n.updates === 1 ? '' : 's'}</div></td>
+                    <td className="right tiny nowrap">{n.lastUpdate ? fmtShortDate(n.lastUpdate) : <span className="muted">—</span>}</td>
                   </tr>
                 )
               })}

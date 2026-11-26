@@ -216,7 +216,7 @@ export function EditGoalModal({ goal, onClose }) {
   const { toast } = useFeedback()
   const cycle = byId(state.cycles, goal.cycleId)
   const started = ['running', 'stopped'].includes(goal.status)
-  const [f, setF] = useState({ name: goal.name, description: goal.description || '', startDate: goal.startDate, endDate: goal.endDate })
+  const [f, setF] = useState({ name: goal.name, startDate: goal.startDate, endDate: goal.endDate })
   const [reason, setReason] = useState('')
   const [tried, setTried] = useState(false)
   const kpis = goalKpis(state, goal.id)
@@ -242,7 +242,6 @@ export function EditGoalModal({ goal, onClose }) {
       footer={<><button className="btn secondary" onClick={onClose}>Cancel</button><button className="btn primary" onClick={save}>Save changes</button></>}>
       <div className="col gap-12">
         <Field label="Goal name" required error={e('name')}><input className="input" value={f.name} onChange={(ev) => setF({ ...f, name: ev.target.value })} /></Field>
-        <Field label="Description"><textarea className="textarea" value={f.description} onChange={(ev) => setF({ ...f, description: ev.target.value })} /></Field>
         <div className="grid g-2">
           <Field label="Start date"><input type="date" className="input" disabled={started} value={f.startDate} min={cycle.startDate} max={f.endDate} onChange={(ev) => setF({ ...f, startDate: ev.target.value })} /></Field>
           <Field label="End date" error={e('endDate')}><input type="date" className="input" value={f.endDate} min={minEnd} max={cycle.endDate} onChange={(ev) => setF({ ...f, endDate: ev.target.value })} /></Field>
@@ -296,7 +295,7 @@ export function EditKpiModal({ kpi, onClose }) {
   const hasResults = state.updates.some((u) => u.kpiId === kpi.id)
   const lastResult = state.updates.filter((u) => u.periodId === period.id).map((u) => u.date).sort().slice(-1)[0]
   const running = goal.status === 'running'
-  const [f, setF] = useState({ name: kpi.name, description: kpi.description || '', unit: kpi.unit, startValue: kpi.startValue, target: period.target, endDate: period.endDate })
+  const [f, setF] = useState({ name: kpi.name, unit: kpi.unit, startValue: kpi.startValue, target: period.target, endDate: period.endDate })
   const [weights, setWeights] = useState(Object.fromEntries(siblings.map((k) => [k.id, k.weight])))
   const [reason, setReason] = useState('')
   const [tried, setTried] = useState(false)
@@ -343,7 +342,6 @@ export function EditKpiModal({ kpi, onClose }) {
       <div className="grid" style={{ gridTemplateColumns: 'minmax(0,1.3fr) minmax(0,1fr)', alignItems: 'start' }}>
         <div className="col gap-12">
           <Field label="KPI name" required error={e('name')}><input className="input" value={f.name} onChange={(ev) => setF({ ...f, name: ev.target.value })} /></Field>
-          <Field label="Description"><input className="input" value={f.description} onChange={(ev) => setF({ ...f, description: ev.target.value })} /></Field>
           <div className="grid g-2">
             <Field label="Type"><input className="input" disabled value={KPI_TYPES[kpi.type].label} /></Field>
             <Field label="Unit">

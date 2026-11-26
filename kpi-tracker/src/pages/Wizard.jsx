@@ -256,9 +256,6 @@ function StepGoal({ draft, up, fieldErr, cycle, openCycles }) {
           <input className={`input ${fieldErr('goal.name') ? 'invalid' : ''}`} value={g.name} onChange={(e) => up((d) => { d.goal.name = e.target.value })} />
         </Field>
       </div>
-      <Field label="Description" style={{ marginTop: 14 }}>
-        <textarea className="textarea" value={g.description} onChange={(e) => up((d) => { d.goal.description = e.target.value })} />
-      </Field>
 
       <div className="field mt-16" role="group" aria-labelledby="goal-type-label">
         <span className="label" id="goal-type-label">Goal type</span>
@@ -368,9 +365,6 @@ function StepKpis({ draft, up, fieldErr, collapsedKpis, setKpiCollapsed, errors 
                     <input className="input" value={KPI_TYPES[draft.goal.type].label} disabled />
                   </Field>
                 </div>
-                <Field label="Description" style={{ marginTop: 12 }}>
-                  <input className="input" value={k.description} onChange={(e) => set({ description: e.target.value })} />
-                </Field>
                 <div className="wizard-kpi-fields mt-12">
                   <Field label="Unit" required field={f('unit')} error={E('unit')}>
                     <select className={`select ${E('unit') ? 'invalid' : ''}`} value={k.unit} disabled={k.type === 'completion'} onChange={(e) => set({ unit: e.target.value })}>
@@ -853,12 +847,10 @@ function StepReview({ state, draft, errors, warnings, cycle, onFix, onAdjust }) 
           <div className="kv-grid">
             <div><div className="k">Name</div><div className="v">{g.name || '—'}</div></div>
             <div><div className="k">Type</div><div className="v">{KPI_TYPES[g.type].label}</div></div>
-            <div><div className="k">Weight</div><div className="v">100% (tracked on its own)</div></div>
             <div><div className="k">Review cycle</div><div className="v">{cycle?.name}</div></div>
             <div><div className="k">Start date</div><div className="v">{fmtDate(g.startDate)}</div></div>
             <div><div className="k">End date</div><div className="v">{fmtDate(g.endDate)}</div></div>
           </div>
-          {g.description && <p className="small muted mt-12">{g.description}</p>}
         </div>
       </div>
 
@@ -878,7 +870,7 @@ function StepReview({ state, draft, errors, warnings, cycle, onFix, onAdjust }) 
               {draft.kpis.length === 0 && <tr><td colSpan={8} className="muted center">No KPIs yet.</td></tr>}
               {draft.kpis.map((k) => (
                 <tr key={k.key}>
-                  <td className="semi">{k.name || 'Untitled KPI'}{k.description && <div className="tiny muted">{k.description}</div>}</td>
+                  <td className="semi">{k.name || 'Untitled KPI'}</td>
                   <td><Badge tone="blue">{KPI_TYPES[k.type].label}</Badge></td>
                   <td>{k.type === 'completion' ? '%' : k.unit}</td>
                   <td className="right mono">{k.type === 'average' ? k.startValue : '—'}</td>

@@ -1,4 +1,4 @@
-export const keeper = [
+const legacyKeeper = [
   ['Growth', 'Leadership growth, reading, studies or certifications, and ability to train the team.'],
   ['Competency', 'Fulfills the expectations set for the role.'],
   ['Innovation', 'Brings original ideas to improve or create processes or products.'],
@@ -22,12 +22,43 @@ export const beliefs = [
 
 
 export const defaultRatingCategories = {
-  keeperLead: { name: 'Keeper Test', dimensions: keeper, points: 15 },
   team: { name: 'Team Rating', dimensions: team, points: 5 },
   beliefs: { name: 'Company Beliefs', dimensions: beliefs, points: 20 },
 }
 
 export const defaultRatingSetup = { enabled: false, startDate: '', endDate: '', categories: defaultRatingCategories }
+
+export function removeLegacyKeeperRatings(state) {
+  for (const { id } of state.cycles) {
+    const saved = state.orgFitSetup?.[id]
+    const categories = saved?.categories ?? defaultRatingCategories
+    const removed = Object.entries(categories).filter(([key, category]) => ratingCategoryType(key, category) === 'keeperLead')
+    const remaining = Object.fromEntries(Object.entries(categories).filter(([key, category]) => ratingCategoryType(key, category) !== 'keeperLead'))
+    const submissions = state.orgFitSubmissions?.[id] ?? {}
+    const retired = new Set(['keeperLead', 'keeperSelf', ...removed.flatMap(([key]) => [key, key + ':self'])])
+    const affected = Object.entries(submissions).filter(([, sections]) => Object.keys(sections).some((section) => retired.has(section)))
+    if (!removed.length && !affected.length) continue
+
+    const historicalCategories = { keeperLead: { name: 'Keeper Test', dimensions: legacyKeeper, points: 15 }, ...categories }
+    const history = ratingHistory(state, id, { categories: historicalCategories })
+    state.orgFitRatingHistory ??= {}
+    state.orgFitRatingHistory[id] = history
+    const next = { ...defaultRatingSetup, ...saved, categories: Object.keys(remaining).length ? remaining : defaultRatingCategories }
+    if (removed.length) state.orgFitSetup[id] = next
+
+    for (const [, sections] of affected) {
+      for (const section of retired) delete sections[section]
+    }
+    const scores = (state.orgFit ??= {})[id] ??= {}
+    const staffToRescore = removed.length ? Object.entries(submissions) : affected
+    for (const [staffId, sections] of staffToRescore) {
+      const points = fitPoints(next, sections, staffId)
+      if (points === null) delete scores[staffId]
+      else scores[staffId] = Number((points / 40 * 100).toFixed(2))
+    }
+  }
+  return state
+}
 
 const ratingCalendar = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Africa/Kampala', dateStyle: 'short' })
 export const ratingDate = () => ratingCalendar.format(new Date())
@@ -48,9 +79,8 @@ export function ratingSection(setup, section) {
   return setup.categories[key]
 }
 
-export function ratingHistory(state, cycleId) {
+export function ratingHistory(state, cycleId, setup = state.orgFitSetup?.[cycleId] ?? defaultRatingSetup) {
   if (state.orgFitRatingHistory?.[cycleId]) return state.orgFitRatingHistory[cycleId]
-  const setup = state.orgFitSetup?.[cycleId] ?? defaultRatingSetup
   const snapshots = [
     ...(state.orgFitRatingArchive?.[cycleId] ?? []),
     { categories: setup.categories, submissions: state.orgFitSubmissions?.[cycleId] },
@@ -65,15 +95,10 @@ export function ratingHistory(state, cycleId) {
       })))
 }
 
-function selfSection(key) {
-  return key === 'keeperLead' ? 'keeperSelf' : key + ':self'
-}
-
 export function assignedRatingSections(setup, state, reviewer, employee) {
   const allowed = ratingAssignments(state, reviewer, employee)
   return Object.entries(setup.categories).flatMap(([key, category]) => {
     const type = ratingCategoryType(key, category)
-    if (type === 'keeperLead' && allowed.includes('keeperSelf')) return [selfSection(key)]
     return allowed.includes(type) ? [key] : []
   })
 }
@@ -92,7 +117,7 @@ export function changedRatingSections(previous, next) {
     const type = ratingCategoryType(key, category)
     if (updated && type === ratingCategoryType(key, updated) &&
         JSON.stringify(category.dimensions.map(([name]) => name)) === JSON.stringify(updated.dimensions.map(([name]) => name))) return []
-    return type === 'keeperLead' ? [key, selfSection(key)] : [key]
+    return [key]
   })
 }
 
@@ -124,7 +149,7 @@ export function ratingSetupError(setup) {
 
 export function ratingAssignments(state, reviewer, employee) {
   if (!reviewer?.departmentId || !employee?.departmentId || reviewer.active === false || employee.active === false) return []
-  if (reviewer.id === employee.id) return ['keeperSelf', 'team']
+  if (reviewer.id === employee.id) return ['team']
   if (reviewer.departmentId !== employee.departmentId) return []
 
   const department = state.departments.find(({ id }) => id === employee.departmentId)
@@ -141,7 +166,6 @@ export function ratingAssignments(state, reviewer, employee) {
 
   const sections = []
   if (sameGroup || ratesTeamLead || ratesHead) sections.push('team')
-  if (departmentLead || directReportOfHead) sections.push('keeperLead')
   if (teamLead || departmentLead || directReportOfHead) sections.push('beliefs')
   return sections
 }
@@ -168,7 +192,6 @@ export function fitPoints(setup, submissions, employeeId) {
   let maximum = 0
   for (const [key, category] of Object.entries(setup.categories)) {
     const type = ratingCategoryType(key, category)
-    if (type === 'keeperLead' && !validRatings(setup, selfSection(key), submissions[selfSection(key)]?.[employeeId])) return null
     if (type === 'team' && !validRatings(setup, key, submissions[key]?.[employeeId])) return null
     const points = sectionPoints(setup, key, submissions[key])
     if (points === null) return null

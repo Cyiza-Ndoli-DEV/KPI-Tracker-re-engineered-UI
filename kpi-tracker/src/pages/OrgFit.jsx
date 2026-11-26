@@ -5,12 +5,14 @@ import { Avatar, Badge, Field, Modal, ScoreDot, Tabs, useFeedback } from '../com
 import { assignedRatingSections, changedRatingSections, criterionPoints, defaultRatingSetup, ratingCategoryType, ratingHistory, ratingSection, ratingSetupError, ratingStatus, starPoints, validRatings } from '../lib/orgFit'
 import { band, byId, personScore } from '../lib/calc'
 import { fmtDate, uid } from '../lib/utils'
+import KeeperTestResponses from './KeeperTestResponses'
 
 /** Organizational Fit scores — its own page in the side menu (moved out of Admin Settings). */
 export default function OrgFit() {
   const { state } = useStore()
   const cycle = byId(state.cycles, state.viewCycleId)
   const setup = state.orgFitSetup?.[cycle?.id] ?? defaultRatingSetup
+  const [adminTab, setAdminTab] = useState('Categories')
   const [, refresh] = useState(0)
   useEffect(() => {
     const timer = setInterval(() => refresh((tick) => tick + 1), 30000)
@@ -26,25 +28,25 @@ export default function OrgFit() {
         </div>
       </div>
       {state.role === 'admin'
-        ? <AdminRatings key={cycle.id} cycle={cycle} setup={setup} status={status} />
+        ? <AdminRatings key={cycle.id} cycle={cycle} setup={setup} status={status} tab={adminTab} setTab={setAdminTab} />
         : <PersonalRatings key={cycle.id + ':' + currentUserId(state)} cycle={cycle} setup={setup} status={status} />}
     </div>
   )
 }
 
-const adminTabs = ['Categories', 'Schedule', 'Scores']
+const adminTabs = ['Categories', 'Schedule', 'Scores', 'Keeper Test responses']
 
-function AdminRatings({ cycle, setup, status }) {
-  const [tab, setTab] = useState('Categories')
+function AdminRatings({ cycle, setup, status, tab, setTab }) {
   return (
     <>
-      <nav className="row gap-6" aria-label="Rating settings sections">
+      <nav className="row wrap gap-6" aria-label="Organizational Fit sections">
         {adminTabs.map((name) => <button key={name} type="button" className={'btn ' + (tab === name ? 'primary' : '')}
           aria-pressed={tab === name} onClick={() => setTab(name)}>{name}</button>)}
       </nav>
       {tab === 'Categories' && <RatingCategories cycle={cycle} setup={setup} />}
       {tab === 'Schedule' && <RatingSetup cycle={cycle} saved={setup} status={status} />}
       {tab === 'Scores' && <OrgFitPanel cycle={cycle} />}
+      {tab === 'Keeper Test responses' && <KeeperTestResponses cycle={cycle} />}
     </>
   )
 }
@@ -231,7 +233,8 @@ function OrgFitPanel({ cycle }) {
   const [team, setTeam] = useState('all')
   const [submission, setSubmission] = useState('all')
   const [selected, setSelected] = useState(null)
-  const history = ratingHistory(state, cycle.id)
+  const history = ratingHistory(state, cycle.id).filter(({ section, category }) =>
+    section !== 'keeperSelf' && ratingCategoryType(section.split(':')[0], category) !== 'keeperLead')
   const months = [...new Set(history.map((entry) => entry.month))].sort().reverse()
   const ratings = month === 'all' ? history : history.filter((entry) => entry.month === month)
   const ratedPeople = new Set(ratings.map((entry) => entry.staffId))
@@ -309,7 +312,7 @@ function RatingResults({ employee, month, ratings, staff, onClose }) {
     const key = JSON.stringify([entry.month, section, category.name, category.dimensions])
     if (!sections.has(key)) sections.set(key, [])
     sections.get(key).push(entry)
-    const categoryKey = section === 'keeperSelf' ? 'keeperLead' : section.split(':')[0]
+    const categoryKey = section.split(':')[0]
     if (!summaries.has(categoryKey)) summaries.set(categoryKey, { name: category.name, scores: [], criteria: new Map() })
     const summary = summaries.get(categoryKey)
     entry.ratings.forEach((stars, index) => {
@@ -339,10 +342,10 @@ function RatingResults({ employee, month, ratings, staff, onClose }) {
       ) : (
         <div className="col gap-20">
           {[...sections].sort(([, [a]], [, [b]]) => b.month.localeCompare(a.month)).map(([key, entries]) => {
-            const { section, category, month: submittedMonth } = entries[0]
+            const { category, month: submittedMonth } = entries[0]
             return <section className="col gap-10" key={key}>
               {month === 'all' && <div className="small muted">{monthLabel(submittedMonth)}</div>}
-              <h3>{category.name}{(section === 'keeperSelf' || section.endsWith(':self')) && ' self-assessment'}</h3>
+              <h3>{category.name}</h3>
               {entries.map(({ reviewerId: id, ratings }, index) => (
                 <div key={id + ':' + index}>
                   <div className="semi">{byId(staff, id)?.name ?? id}{id === employee.id && ' (self)'}</div>

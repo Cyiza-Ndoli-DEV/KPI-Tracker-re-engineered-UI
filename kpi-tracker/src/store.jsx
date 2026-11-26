@@ -1,10 +1,11 @@
 // In-memory app state (persisted to localStorage so a refresh during a demo loses nothing).
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { createSeed, ROLES } from './data/seed'
+import { addSampleRatings, createSeed, ROLES } from './data/seed'
 import { uid, nowISO, todayISO, minISO, addDays, round, sum } from './lib/utils'
 import { byId, currentPeriod, childAllocations, allocationUpdates, unitName, kpiPeriods, cumulativeAt } from './lib/calc'
-import { assignedRatingSections, changedRatingSections, criterionPoints, defaultRatingSetup, fitPoints, ratingDate, ratingHistory, ratingSection, ratingSetupError, ratingStatus, validRatings } from './lib/orgFit'
+import { assignedRatingSections, changedRatingSections, criterionPoints, defaultRatingSetup, fitPoints, ratingDate, ratingHistory, ratingSection, ratingSetupError, ratingStatus, removeLegacyKeeperRatings, validRatings } from './lib/orgFit'
 import { commitDraftToEntities, draftFromGoal } from './lib/draft'
+import { keeperItems, keeperReports, validKeeperTest } from './lib/keeperTest'
 
 const VERSION = 9
 const KEY = `pahappa-kpi-prototype-v${VERSION}`
@@ -15,7 +16,7 @@ function load() {
     const raw = localStorage.getItem(KEY)
     if (!raw) return null
     const s = JSON.parse(raw)
-    return s.version === VERSION ? s : null
+    return s.version === VERSION ? addSampleRatings(removeLegacyKeeperRatings(s)) : null
   } catch {
     return null
   }
@@ -65,6 +66,47 @@ export function StoreProvider({ children }) {
       }),
       setViewCycle: (id) => mutate((n) => { n.viewCycleId = id }),
       resetDemo: () => setState(createSeed()),
+      addKeeperTestItem: (label) => mutate((n) => {
+        const name = label.trim()
+        if (n.role !== 'admin' || !name || keeperItems(n).some(([, item]) => item.toLowerCase() === name.toLowerCase())) return
+        n.keeperTestItems ??= []
+        n.keeperTestItems.push([uid('kt'), name])
+      }),
+      editKeeperTestItem: (id, label) => mutate((n) => {
+        const item = n.keeperTestItems?.find(([key]) => key === id)
+        const name = label.trim()
+        if (n.role !== 'admin' || !item || !name ||
+            keeperItems(n).some(([key, current]) => key !== id && current.toLowerCase() === name.toLowerCase())) return
+        n.keeperTestPastLabels ??= {}
+        n.keeperTestPastLabels[id] ??= item[1]
+        item[1] = name
+      }),
+      deleteKeeperTestItem: (id) => mutate((n) => {
+        const item = n.keeperTestItems?.find(([key]) => key === id)
+        if (n.role !== 'admin' || !item) return
+        n.keeperTestPastLabels ??= {}
+        n.keeperTestPastLabels[id] ??= item[1]
+        n.keeperTestItems = n.keeperTestItems.filter(([key]) => key !== id)
+      }),
+      saveKeeperTest: (cycleId, staffId, answers, reasons, reason) => mutate((n) => {
+        const reviewerId = currentUserId(n)
+        const items = keeperItems(n)
+        if (!byId(n.cycles, cycleId) ||
+            !keeperReports(n, reviewerId).some((person) => person.id === staffId) ||
+            !validKeeperTest(items, answers, reasons, reason)) return
+
+        n.keeperTests ??= {}
+        const cycle = n.keeperTests[cycleId] ??= {}
+        const reviews = cycle[reviewerId] ??= {}
+        const previous = reviews[staffId]
+        reviews[staffId] = {
+          answers: { ...previous?.answers, ...Object.fromEntries(items.map(([key]) => [key, answers[key]])) },
+          reasons: { ...previous?.reasons, ...Object.fromEntries(items.map(([key]) => [key, reasons[key].trim()])) },
+          itemLabels: { ...previous?.itemLabels, ...Object.fromEntries(items) },
+          reason: reason.trim(),
+          updatedAt: nowISO(),
+        }
+      }),
       updateSettings: (patch) => mutate((n) => {
         const before = { ...n.settings }
         Object.assign(n.settings, patch)
@@ -132,13 +174,14 @@ export function StoreProvider({ children }) {
         const category = ratingSection(setup, section)
         const history = ratingHistory(n, cycleId)
         const criteria = JSON.stringify(category.dimensions.map(([name]) => name))
-        const index = history.findIndex((entry) => entry.month === month && entry.staffId === staffId &&
-          entry.section === section && entry.reviewerId === reviewerId &&
-          JSON.stringify(entry.category.dimensions.map(([name]) => name)) === criteria)
         const current = n.orgFitSubmissions?.[cycleId]?.[staffId]?.[section]?.[reviewerId]
+        const index = current ? history.findLastIndex((entry) => entry.staffId === staffId &&
+          entry.section === section && entry.reviewerId === reviewerId &&
+          JSON.stringify(entry.category.dimensions.map(([name]) => name)) === criteria &&
+          JSON.stringify(entry.ratings) === JSON.stringify(current)) : -1
         if (index >= 0 && JSON.stringify(history[index].ratings) === JSON.stringify(row) &&
           JSON.stringify(current) === JSON.stringify(row)) return
-        const entry = { month, staffId, section, reviewerId, category: structuredClone(category), ratings: row.slice() }
+        const entry = { month: index >= 0 ? history[index].month : month, staffId, section, reviewerId, category: structuredClone(category), ratings: row.slice() }
         if (index >= 0) history[index] = entry
         else history.push(entry)
         n.orgFitRatingHistory ??= {}
@@ -206,6 +249,7 @@ export function StoreProvider({ children }) {
         n.drafts = n.drafts.filter((d) => d.cycleId !== id)
         n.cycles = n.cycles.filter((x) => x.id !== id)
         if (n.orgFitRatingHistory) delete n.orgFitRatingHistory[id]
+        if (n.keeperTests) delete n.keeperTests[id]
         if (n.viewCycleId === id) n.viewCycleId = (n.cycles.find((x) => x.status === 'active') || [...n.cycles].sort((a, b) => b.startDate.localeCompare(a.startDate))[0])?.id
         log(n, { action: 'Cycle deleted', subject: c.name, oldValue: `${c.status}; ${goalIds.size} goal(s), ${kpiIds.size} KPI(s), ${shares} share(s), ${updIds.size} result(s), ${drafts} draft(s)`, newValue: 'Deleted', note: reason })
       }),

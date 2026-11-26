@@ -142,6 +142,15 @@ button { font-family: inherit; }
 /* ---------------- cards ---------------- */
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
 .card-pad { padding: 20px; }
+.keeper-response-details {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px 16px;
+  margin: 0;
+}
+.keeper-response-details dt { color: var(--muted); font-weight: 600; }
+.keeper-response-details dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .card-head { display: flex; align-items: center; gap: 10px; padding: 16px 20px; border-bottom: 1px solid var(--border); }
 .card-body { padding: 18px 20px; }
 .card.hover { transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s; cursor: pointer; }
@@ -482,7 +491,7 @@ button { font-family: inherit; }
 .search-control { position: relative; display: block; }
 .search-control > svg { position: absolute; inset: 50% auto auto 12px; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
 .search-control > .input { padding-inline-start: 36px; }
-.kpi-nodes .node-organization td { background: #fffaf2; border-top: 2px solid #fde7c8; }
+.kpi-nodes .node-organization td { border-top: 2px solid var(--border); }
 .kpi-nodes .node-department td:first-child { border-left: 3px solid var(--blue-200); }
 .kpi-nodes tr.is-left td { opacity: 0.6; }
 .chain-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; background: white; cursor: pointer; }

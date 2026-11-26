@@ -93,9 +93,10 @@ function DeleteCycleModal({ cycle, onClose }) {
   const shares = state.allocations.filter((a) => periodIds.has(a.periodId)).length
   const results = state.updates.filter((u) => kpiIds.has(u.kpiId)).length
   const drafts = state.drafts.filter((d) => d.cycleId === cycle.id).length
+  const keeperTests = Object.values(state.keeperTests?.[cycle.id] ?? {}).reduce((total, reviews) => total + Object.keys(reviews).length, 0)
   const people = new Set(state.allocations.filter((a) => periodIds.has(a.periodId) && a.level === 'individual').map((a) => a.unitId)).size
   // a cycle with real data needs the name typed; an empty draft cycle does not
-  const strict = results > 0 || cycle.status !== 'draft'
+  const strict = results > 0 || keeperTests > 0 || cycle.status !== 'draft'
   const nameOk = !strict || typed.trim() === cycle.name.trim()
   const reasonOk = !strict || reason.trim()
   const go = () => {
@@ -112,6 +113,7 @@ function DeleteCycleModal({ cycle, onClose }) {
     ['People with KPIs', people],
     ['Recorded results', results],
     ['Goal drafts', drafts],
+    ['Keeper Tests', keeperTests],
   ]
   return (
     <Modal
@@ -129,8 +131,8 @@ function DeleteCycleModal({ cycle, onClose }) {
       <div className="col gap-12">
         <Alert tone={strict ? 'error' : 'warn'}>
           {strict
-            ? <>This permanently removes the cycle and <b>everything in it</b>. It cannot be undone. {cycle.status === 'ended' ? 'This is a finished cycle: its results are performance history.' : cycle.status === 'active' ? 'This cycle is active: people are tracking against it now.' : ''} To keep the history instead, use <b>End cycle</b>.</>
-            : <>This draft cycle has no results. It and its set-up are removed.</>}
+            ? <>This permanently deletes the cycle and its data.</>
+            : <>This deletes the draft cycle and its setup.</>}
         </Alert>
         <table className="table compact">
           <tbody>

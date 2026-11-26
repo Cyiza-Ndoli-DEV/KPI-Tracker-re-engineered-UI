@@ -6,7 +6,7 @@ import { AllocationTree, AddMemberModal, UpdateModal, ReuseModal, valueLabel } f
 import { LeaverModal, EditGoalModal, AddKpiModal, EditSharesModal } from '../components/ChangeModals'
 import GoalTracking from '../components/GoalTracking'
 import { byId, goalKpis, goalProgress, kpiProgress, currentPeriod, childAllocations, KPI_TYPES } from '../lib/calc'
-import { fmtRange, fmtPct, fmtDate, todayISO } from '../lib/utils'
+import { fmtRange, fmtDate, todayISO } from '../lib/utils'
 
 export function goalStartCheck(state, goal) {
   const cycle = byId(state.cycles, goal.cycleId)
@@ -66,7 +66,6 @@ export default function GoalDetail({ id }) {
             <div style={{ flex: 1, minWidth: 280 }}>
               <div className="row gap-6 mb-8"><GoalStatus status={goal.status} /><Badge tone="blue">{KPI_TYPES[goal.type].label}</Badge><span className="badge navy">Tracked on its own · 100%</span></div>
               <h1>{goal.name}</h1>
-              <p className="muted mt-4" style={{ maxWidth: 700 }}>{goal.description}</p>
               <div className="row wrap gap-16 mt-12 small">
                 <span><span className="muted">Period</span> <b>{fmtRange(goal.startDate, goal.endDate)}</b></span>
                 <span><span className="muted">KPIs</span> <b>{kpis.length}</b></span>
@@ -114,7 +113,6 @@ export default function GoalDetail({ id }) {
                 <ArrowRight size={16} color="var(--blue-600)" />
               </div>
               <div className="row mt-12 small"><ScoreDot value={kp.progress} /><span className="muted spacer">Achieved</span><b>{valueLabel(k, kp.current)}</b><span className="muted">of {k.type === 'completion' ? '100%' : valueLabel(k, kp.target)}</span></div>
-              <div className="tiny muted mt-8">Adds <b style={{ color: 'var(--text)' }}>{fmtPct((kp.progress * k.weight) / 100, 1)}</b> to the goal ({k.weight}% contribution)</div>
             </Link>
           )
         })}

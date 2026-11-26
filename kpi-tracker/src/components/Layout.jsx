@@ -1,25 +1,29 @@
 import { useState } from 'react'
-import { LayoutDashboard, CalendarRange, Target, Wand2, FileClock, UserCheck, Settings, Gauge, BarChart3, CalendarDays, ArrowLeft, AlignLeft, CircleUserRound, Power, User, HeartHandshake } from 'lucide-react'
+import { LayoutDashboard, CalendarRange, Target, ClipboardCheck, UserCheck, Settings, Gauge, BarChart3, CalendarDays, ArrowLeft, AlignLeft, CircleUserRound, Power, User, HeartHandshake } from 'lucide-react'
 import { useStore, useCurrentUser, currentUserId } from '../store'
 import { ROLES } from '../data/seed'
 import { Link, navigate, useFeedback } from './ui'
 import { fmtDate, todayISO } from '../lib/utils'
 import { byId } from '../lib/calc'
+import { canSubmitKeeperTest } from '../lib/keeperTest'
 
 export const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, roles: 'all' },
   { to: '/cycles', label: 'Review Cycles', icon: CalendarRange, roles: ['admin'] },
   { to: '/goals', label: 'Goals', icon: Target, roles: ['admin', 'dept_head', 'team_lead'] },
   { to: '/kpis', label: 'KPIs', icon: Gauge, roles: ['admin', 'dept_head', 'team_lead'] },
-  { to: '/wizard', label: 'Goal Setup Wizard', icon: Wand2, roles: ['admin'] },
-  { to: '/drafts', label: 'Drafts', icon: FileClock, roles: ['admin'], count: 'drafts' },
+  { to: '/wizard', roles: ['admin'], hidden: true },
+  { to: '/drafts', roles: ['admin'], hidden: true },
   { to: '/my-kpis', label: 'My KPIs', icon: UserCheck, roles: 'all' },
   { to: '/reports', label: 'Reports', icon: BarChart3, roles: 'all' },
   { to: '/org-fit', label: 'Ratings', icon: HeartHandshake, roles: 'all' },
+  { to: '/keeper-test', label: 'Keeper Test', icon: ClipboardCheck, permission: canSubmitKeeperTest },
   { to: '/admin', label: 'Admin Settings', icon: Settings, roles: ['admin'], count: 'requests' },
 ]
 
-export const allowed = (item, role) => !item.roles || item.roles === 'all' || item.roles.includes(role)
+export const allowed = (item, state) => item.permission
+  ? item.permission(state, currentUserId(state))
+  : !item.roles || item.roles === 'all' || item.roles.includes(state.role)
 
 const PAGE_LABEL = { '': 'Dashboard', cycles: 'Review Cycles', goals: 'Goals', kpis: 'KPIs', wizard: 'Goal Setup Wizard', drafts: 'Drafts', 'my-kpis': 'My KPIs', rankings: 'Reports', reports: 'Reports', admin: 'Admin Settings' }
 
@@ -29,7 +33,6 @@ export default function Layout({ route, children }) {
   const user = useCurrentUser()
   const [collapsed, setCollapsed] = useState(false)
   const counts = {
-    drafts: state.drafts.length,
     requests: state.editRequests.filter((r) => r.status === 'pending').length,
   }
   const isActive = (to) => to === '/' ? route.path === '/' : route.path.startsWith(to) ||
@@ -67,7 +70,7 @@ export default function Layout({ route, children }) {
               </div>
             </div>
             <nav className="hr-nav">
-              {NAV.filter((n) => allowed(n, state.role)).map((n) => (
+              {NAV.filter((n) => !n.hidden && allowed(n, state)).map((n) => (
                 <Link key={n.to} to={n.to} className={`hr-nav-item ${isActive(n.to) ? 'active' : ''}`}>
                   <n.icon size={17} />
                   <span>{n.to === '/org-fit' ? ratingsLabel : n.label}</span>
@@ -84,7 +87,7 @@ export default function Layout({ route, children }) {
 
         <div className="hr-main">
           <div className="hr-crumb">
-            <span>{first === 'org-fit' ? ratingsLabel : PAGE_LABEL[first] ?? 'KPI Tracker'}</span>
+            <span>{first === 'org-fit' ? ratingsLabel : first === 'keeper-test' ? 'Keeper Test' : PAGE_LABEL[first] ?? 'KPI Tracker'}</span>
             <div className="spacer" />
             <span className="crumb-chip"><CalendarDays size={13} /> Today: {fmtDate(todayISO())}</span>
             <label className="crumb-field">
@@ -110,7 +113,7 @@ export default function Layout({ route, children }) {
           <footer className="hr-footer">
             <div>
               <div className="hr-footer-brand">Pahappa HR</div>
-              <div className="hr-footer-copy">Copyright © 2026. Powered by <b>Pahappa LTD</b> · KPI Tracker prototype (mock data)</div>
+              <div className="hr-footer-copy">Copyright © 2026. Powered by <b>Pahappa LTD</b></div>
             </div>
             <div className="spacer" />
             <span className="hr-footer-copy">v3.0.0</span>

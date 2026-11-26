@@ -61,8 +61,7 @@ export default function KpiDetail({ id, query }) {
                 <Badge tone={period.status === 'open' ? 'green' : 'gray'} dot>Period {period.index} · {period.status}</Badge>
               </div>
               <h1>{kpi.name}</h1>
-              <div className="row gap-6 mt-4 small"><span className="muted">Attached to goal</span><Link to={`/goals/${goal.id}`} className="goal-chip">{goal.name}</Link><span className="muted">· carries {kpi.weight}% of it</span></div>
-              <p className="muted mt-4">{kpi.description}</p>
+              <div className="row gap-6 mt-4 small"><Link to={`/goals/${goal.id}`} className="goal-chip">{goal.name}</Link></div>
               <div className="row wrap gap-16 mt-12 small">
                 <span><span className="muted">Target</span> <b>{kpi.type === 'completion' ? 'Fully achieved' : valueLabel(kpi, stats.target)}</b></span>
                 {kpi.type === 'average' && <span><span className="muted">Start</span> <b>{valueLabel(kpi, kpi.startValue)}</b></span>}
