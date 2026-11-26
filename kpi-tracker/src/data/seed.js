@@ -1,8 +1,61 @@
 // Mock data for the prototype. Departments, teams and staff mimic what is synced from Pahappa HR.
 
 import { assignedRatingSections, defaultRatingSetup, fitPoints, ratingHistory, ratingSection } from '../lib/orgFit'
+import { keeperCriteria, keeperReports } from '../lib/keeperTest'
 
 const at = (date, time = '10:00') => new Date(`${date}T${time}:00`).toISOString()
+
+const sampleKeeperTests = [
+  {
+    reviewerId: 's-brian', staffId: 's-sarah', date: '2026-10-20',
+    answers: { competency: 'Yes', innovation: 'Yes', growth: 'Maybe' },
+    reasons: {
+      competency: 'Keeps client records current and follows through on open proposals.',
+      innovation: 'Piloted a follow-up checklist that the rest of the team adopted.',
+      growth: 'Has started mentoring a new teammate and is still building delegation skills.',
+    },
+    reason: 'I would make a strong effort to retain her. She earns client trust and shares approaches that help the whole team.',
+  },
+  {
+    reviewerId: 's-brian', staffId: 's-daniel', date: '2026-10-21',
+    answers: { competency: 'Yes', innovation: 'No', growth: 'Maybe' },
+    reasons: {
+      competency: 'Prepares accurate proposals and reliably handles assigned accounts.',
+      innovation: 'Used the existing process throughout the cycle and did not test a new approach.',
+      growth: 'Completed product training. I would like to see him apply it by leading a client demo.',
+    },
+    reason: 'I would discuss what might make him stay. He provides steady account coverage and could take on more ownership.',
+  },
+  {
+    reviewerId: 's-grace', staffId: 's-brian', date: '2026-10-22',
+    answers: { competency: 'Yes', innovation: 'Maybe', growth: 'Yes' },
+    reasons: {
+      competency: 'Runs regular pipeline reviews and resolves escalations promptly.',
+      innovation: 'Proposed a new handoff process. The pilot is still underway.',
+      growth: 'Coached two team members to run their own pipeline reviews.',
+    },
+    reason: 'I would actively try to retain him. His coaching has helped the team take on more responsibility.',
+  },
+]
+
+export function addSampleKeeperTests(state) {
+  const cycleId = 'c-2026'
+  if (state.sampleKeeperTestsAdded || !state.cycles.some((cycle) => cycle.id === cycleId)) return state
+  state.sampleKeeperTestsAdded = true
+
+  for (const { reviewerId, staffId, date, ...response } of sampleKeeperTests) {
+    if (!keeperReports(state, reviewerId).some((person) => person.id === staffId)) continue
+    const cycle = (state.keeperTests ??= {})[cycleId] ??= {}
+    const reviews = cycle[reviewerId] ??= {}
+    reviews[staffId] ??= {
+      ...structuredClone(response),
+      itemLabels: Object.fromEntries(keeperCriteria),
+      updatedAt: at(date),
+      sample: true,
+    }
+  }
+  return state
+}
 
 const sampleRatings = {
   's-sarah': {
@@ -330,7 +383,7 @@ export function createSeed() {
     },
   ]
 
-  return addSampleRatings({
+  return addSampleKeeperTests(addSampleRatings({
     version: 9,
     settings: {
       orgName: 'Pahappa',
@@ -364,5 +417,5 @@ export function createSeed() {
     editRequests,
     audit,
     drafts,
-  })
+  }))
 }

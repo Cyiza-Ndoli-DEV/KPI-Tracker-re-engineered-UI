@@ -42,7 +42,7 @@ export default function KeeperTestResponses({ cycle }) {
               <thead><tr><th scope="col">Employee</th><th scope="col">Team Lead</th><th scope="col">Last saved</th><th scope="col" className="right">Actions</th></tr></thead>
               <tbody>{visible.map((review) => (
                 <tr key={`${review.reviewerId}:${review.staffId}`}>
-                  <td><div className="row gap-8 semi"><Avatar name={nameOf(review.staffId)} size="sm" />{nameOf(review.staffId)}</div></td>
+                  <td><div className="row gap-8 semi"><Avatar name={nameOf(review.staffId)} size="sm" />{nameOf(review.staffId)}{review.sample && <Badge>Sample</Badge>}</div></td>
                   <td>{nameOf(review.reviewerId)}</td>
                   <td>{fmtDateTime(review.updatedAt)}</td>
                   <td className="right"><button type="button" className="btn secondary sm" aria-label={`View response for ${nameOf(review.staffId)} by ${nameOf(review.reviewerId)}`} onClick={() => setSelected(review)}>View response</button></td>

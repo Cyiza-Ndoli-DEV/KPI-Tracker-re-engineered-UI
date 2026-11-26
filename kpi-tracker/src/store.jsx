@@ -1,6 +1,6 @@
 // In-memory app state (persisted to localStorage so a refresh during a demo loses nothing).
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { addSampleRatings, createSeed, ROLES } from './data/seed'
+import { addSampleKeeperTests, addSampleRatings, createSeed, ROLES } from './data/seed'
 import { uid, nowISO, todayISO, minISO, addDays, round, sum } from './lib/utils'
 import { byId, currentPeriod, childAllocations, allocationUpdates, unitName, kpiPeriods, cumulativeAt } from './lib/calc'
 import { assignedRatingSections, changedRatingSections, criterionPoints, defaultRatingSetup, fitPoints, ratingDate, ratingHistory, ratingSection, ratingSetupError, ratingStatus, removeLegacyKeeperRatings, validRatings } from './lib/orgFit'
@@ -16,7 +16,7 @@ function load() {
     const raw = localStorage.getItem(KEY)
     if (!raw) return null
     const s = JSON.parse(raw)
-    return s.version === VERSION ? addSampleRatings(removeLegacyKeeperRatings(s)) : null
+    return s.version === VERSION ? addSampleKeeperTests(addSampleRatings(removeLegacyKeeperRatings(s))) : null
   } catch {
     return null
   }
